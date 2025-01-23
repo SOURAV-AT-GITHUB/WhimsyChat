@@ -1,42 +1,66 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+#auth-form input:not([type="checkbox"]),#auth-form select  {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    outline: none;
+    border-radius: 5px;
   }
-  to {
-    transform: rotate(360deg);
+#auth-form label {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+#auth-form input:focus,#auth-form select:focus {
+    border: 2px solid var(--color-primary);
   }
-}
 
-.card {
-  padding: 2em;
-}
+  #auth-form input:focus + label,
+  #auth-form input:not(:placeholder-shown) + label {
+    top: 2px;
+    transform: translateY(-60%);
+    color: var(--color-secondary);
+    background-color: #fff;
+    font-size: 12px;
+    color: var(--color-primary);
+  }
+  #auth-form input:not(:placeholder-shown) {
+    border: 1px solid var(--color-primary);
+  }
+  #auth-form input:not(:placeholder-shown) + label{
+    color: var(--color-primary);
+  }
 
-.read-the-docs {
-  color: #888;
-}
+#tick-animation svg {
+    display: block;
+    color: rgb(1, 101, 47);
+    background-color:white;
+    margin: auto;
+    border-radius: 50%;
+    border: 10px solid white;
+    height: 100%;
+    width: 100%;
+  }
+  
+#tick-animation  .circle {
+    stroke-dasharray: 76;
+    stroke-dashoffset: 76;
+    animation: draw 2s forwards;
+    
+  }
+  
+#tick-animation   .tick {
+    stroke-dasharray: 18;
+    stroke-dashoffset: 18;
+    animation: draw 2s forwards 1s;
+    animation-iteration-count: infinite;
+  }
+  
+  @keyframes draw { 
+    to { stroke-dashoffset: 0 } 
+  }

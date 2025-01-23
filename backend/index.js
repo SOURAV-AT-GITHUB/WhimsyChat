@@ -1,16 +1,23 @@
-const express = require("express")
-require("dotenv").config()
-const PORT = process.env.PORT || 3000
-const cors = require('cors')
-const app = express()
-app.use(express.json())
-app.use(cors())
+const http = require("http")
+require("dotenv").config();
+const databaseConnction = require("./config/mongodb.connection");
+const app = require ("./app")
+const setupSocket = require("./config/socket.config")
 
-app.get("/",(req,res)=>{
-      res.send({message:"Server running fine!!"})
-})
+const PORT = process.env.PORT || 3000;
+
+const server = http.createServer(app)
+setupSocket(server)
 
 
-app.listen(PORT,()=>{
-      console.log(`Server running on port ${PORT}`)
-})
+server.listen(PORT, async () => {
+  console.log(`Server running on port ${PORT}`);
+  try {
+    await databaseConnction
+    console.log(`Database connected`)
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+
