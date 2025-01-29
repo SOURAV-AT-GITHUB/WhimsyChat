@@ -361,7 +361,7 @@ export default function Home() {
     }
   }, [currentOpenConversation, conversation]);
   return (
-    <main className="relative max-w-screen-xl m-auto bg-teal-200  bg-opacity-20  rounded-t-xl ">
+    <main id="main-container" className="relative max-w-screen-xl m-auto   bg-opacity-20  rounded-t-xl overflow-hidden ">
       <h1 className="max-h-[10vh] font-medium font-serif tracking-wider py-2 pb-4  text-5xl text-center text-white bg-cyan-500 bg-opacity-35">
         Whimsy Chat
       </h1>
