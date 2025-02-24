@@ -19,11 +19,7 @@ module.exports = function setupSocket(server){
         }
         jwt.verify(token,process.env.JWT_SECRET_SIGN_IN,(err,decoded)=>{
             if(err){
-                if(err.name === "TokenExpiredError"){
-                    return next(new Error("Token Expired"))
-                }else{
-                    return next(new Error("Invalid"))
-                }
+                return next(new Error("Token Error"))
             }else{
                 socket.user = decoded
                 next()

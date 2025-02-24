@@ -16,7 +16,11 @@ const connectSocket = (token)=>{
         console.log("Websocket disconnected")
     })
     socket.on("connect_error",(err)=>{
-        console.log("Socket connection error",err.message)
+        console.log("Socket connection error",err)
+        if(err.message === "Token Error"){
+            localStorage.removeItem('auth')
+            location.reload()
+        }
     })
 }
 
