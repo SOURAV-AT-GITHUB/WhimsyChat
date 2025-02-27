@@ -11,7 +11,7 @@ ContactsRouter.get("/fetch-contacts/:contact_id",verifyToken,async(req,res)=>{
     try {
         const user = await UserModel.findById(req.user.mongoId)
         if(!user) return res.status(404).json({message:"User not found"})
-        if(user.contacts.toString() !== contact_id) return res.status(401).json({message:"You are not authorized to access this contacts"})
+        if(user.contacts.toString() !== contact_id) return res.status(403).json({message:"You are not authorized to access this contacts"})
         const contactList = await ContactsModel.findById(contact_id).populate("contacts")
 
         if(contactList){

@@ -129,7 +129,7 @@ userRouter.post("/verify-email/:token", async (req, res) => {
             if (err) {
               if (err.name === "TokenExpiredError") {
                 const decoded = jwt.decode(token);
-                return res.status(401).json({
+                return res.status(410).json({
                   message: "Token Expired",
                   data: decoded,
                   state: { isExpired: true },
@@ -178,7 +178,7 @@ userRouter.post("/signin", async (req, res) => {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       } else if (!user.verified) {
-        return res.status(401).json({ message: "User is not verified" });
+        return res.status(403).json({ message: "User is not verified" });
       } else {
         bcrypt.compare(password, user.password, async (err, match) => {
           if (err) return res.status(500).json({ message: err.message });
