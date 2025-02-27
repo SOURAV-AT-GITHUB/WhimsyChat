@@ -10,7 +10,7 @@ module.exports = async function verifyToken(req, res, next) {
       if (err) {
         return res
           .status(401)
-          .json({ message: "Inavlid or expired token, please login again." });
+          .json({ message: "Invalid or expired token, please login again." });
       }
       req.user = decoded;
       next();
