@@ -10,6 +10,8 @@ const defaultAuthState = {
   token: null,
   email: null,
   gender:null,
+  mongoId:null,
+  contactsId:null
 };
 
 export const authReducer = (state = JSON.parse(localStorage.getItem('auth')) || defaultAuthState, { type, payload }) => {
