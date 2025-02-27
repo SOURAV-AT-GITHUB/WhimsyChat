@@ -14,7 +14,6 @@ const conversationSchema = new mongoose.Schema({
         required: function() {
           return this.isGroup;
         },
-        default:null
     },
 },{ timestamps: true,versionKey:false})
 

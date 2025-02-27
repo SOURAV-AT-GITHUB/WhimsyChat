@@ -4,7 +4,6 @@ const messageSchema = new mongoose.Schema({
   value: { type: String, required: true },
   type: { type: String, required: true },
   sender: { type: String, required: true },
-  receiver: { type: String, required: true },
   status: {
     isSent: { type: String, default: Date.now },
     isDelivered: { type: String, default: null },
