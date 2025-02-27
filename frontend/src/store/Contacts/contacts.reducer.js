@@ -23,11 +23,23 @@ export function contactsReducer(
 ) {
   switch (type) {
     case FETCH_CONTACTS_REQUEST:
-      return (state = { ...defaultContactsState, contactsLoading: true });
+      return (state = {
+        contactsLoading: true,
+        contacts: [],
+        contactsError: null,
+      });
     case FETCH_CONTACTS_SUCCESS:
-      return (state = { ...defaultContactsState, contacts: payload });
+      return (state = {
+        contactsLoading: false,
+        contacts: payload,
+        contactsError: null,
+      });
     case FETCH_CONTACTS_ERROR:
-      return (state = { ...defaultContactsState, contactsError: payload });
+      return (state = {
+        contactsLoading: false,
+        contacts: [],
+        contactsError: payload,
+      });
     default:
       return state;
   }
@@ -38,10 +50,26 @@ export function searchUsersReducer(
   { type, payload }
 ) {
   switch (type) {
-    case RESET_SEARCH: return defaultSearchusersState
-    case SEARCH_USERS_REQUEST: return {isSearching:true,searchResult:[],isSearchError:null}
-    case SEARCH_USERS_SUCCESS: return {isSearching:false,searchResult:payload,isSearchError:null}
-    case SEARCH_USERS_ERROR : return {isSearching:false,searchResult:[],isSearchError:payload}
+    case RESET_SEARCH:
+      return defaultSearchusersState;
+    case SEARCH_USERS_REQUEST:
+      return (state = {
+        isSearching: true,
+        searchResult: [],
+        isSearchError: null,
+      });
+    case SEARCH_USERS_SUCCESS:
+      return (state = {
+        isSearching: false,
+        searchResult: payload,
+        isSearchError: null,
+      });
+    case SEARCH_USERS_ERROR:
+      return (state = {
+        isSearching: false,
+        searchResult: [],
+        isSearchError: payload,
+      });
     default:
       return state;
   }
