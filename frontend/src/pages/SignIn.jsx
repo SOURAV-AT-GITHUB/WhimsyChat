@@ -33,6 +33,7 @@ export default function SignIn() {
     password: null,
     confirm_password: null,
     username: null,
+    // isUsernameAvailable:null,
   };
   const [formData, setFormData] = useState(defaultFormData);
   const [validation, setValidation] = useState(defaultValiditions);
@@ -95,7 +96,7 @@ export default function SignIn() {
         setValidation((prev) => ({
           ...prev,
           username:
-            "username can only contain alphabets, underscores(_), dots/fullstops(.) and should not start with a number.",
+            "user name must be at least 2 character long, username can only contain alphabets, underscores(_), dots/fullstops(.) and should not start with a number.",
         }));
         return;
       }
@@ -131,7 +132,7 @@ export default function SignIn() {
       } else {
         setValidation((prev) => ({
           ...prev,
-          password: "password mismatched",
+          confirm_password: "password mismatched",
         }));
       }
     }
@@ -168,6 +169,7 @@ export default function SignIn() {
           isChecked: true,
           isRegistered: false,
         }));
+        // setValidation(prev=>({...prev,username:null}))
         openSnackbar(
           "Welcome to WhimsyChat, please register yourself!",
           "info"
@@ -204,13 +206,16 @@ export default function SignIn() {
       const response = await axios.post(`${BACKEND_URL}/user/find-username`, {
         username: formData.username,
       });
-      if (response.data.available)
+      if (response.data.available){
         setValidation((prev) => ({ ...prev, username: true }));
+      return true
+    }
       else
         setValidation((prev) => ({
           ...prev,
           username: "username already taken",
         }));
+        
     } catch (error) {
       openSnackbar(error.response?.data.message || error.message, "error");
     } finally {
@@ -220,7 +225,14 @@ export default function SignIn() {
   const handleSignup = async (event) => {
     event.preventDefault();
     setIsLoading(true);
-    try {
+    if(!validation.isUsernameAvailable){
+     const isUsernameAvailable= await checkUsernameAvailability() 
+     if(!isUsernameAvailable) {
+      setIsLoading(false)
+      return 
+    }
+  }
+  try {
       await axios.post(`${BACKEND_URL}/user/signup`, formData);
       openSnackbar(`Verification mail sent to ${formData.email}`, "success");
       setFormData(defaultFormData);
@@ -283,13 +295,17 @@ export default function SignIn() {
               {formData.isChecked && (
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={() =>{
                     setFormData((prev) => ({
                       ...prev,
+                      password:"",
+                      confirm_password:"",
                       isChecked: false,
                       isRegistered: false,
                       verified: false,
                     }))
+                    setValidation({...defaultValiditions,email:null})
+                  }
                   }
                   className="border border-primary min-w-10 rounded-lg"
                 >
@@ -341,6 +357,11 @@ export default function SignIn() {
                       />
                       <label htmlFor="password">Enter Password</label>
                     </div>
+                    {validation.confirm_password && (
+              <p className="text-red-400 text-xs text-left px-1">
+                *{validation.confirm_password}
+              </p>
+            )}
                   </div>
                 )}
               {!formData.isRegistered && (
@@ -350,12 +371,14 @@ export default function SignIn() {
                     <div className="relative">
                       <input
                         value={formData.confirm_password}
-                        onChange={(e) =>
+                        onChange={(e) =>{
                           setFormData((prev) => ({
                             ...prev,
                             confirm_password: e.target.value,
                           }))
+                        checkAllValidation("confirm_password",e.target.value)}
                         }
+                        onBlur={(e)=>checkAllValidation("confirm_password",e.target.value)}
                         type="password"
                         name="confirm_password"
                         placeholder=" "
@@ -375,7 +398,7 @@ export default function SignIn() {
                             ...prev,
                             username: e.target.value.toLocaleLowerCase(),
                           }));
-                          if (typeof validation.username === "string")
+                          // if (typeof validation.username === "string")
                             checkAllValidation("username", e.target.value);
                         }}
                         onBlur={(e) =>
@@ -390,9 +413,9 @@ export default function SignIn() {
                       <label htmlFor="username">Username</label>
                       <button
                         type="button"
-                        className="border p-2 bg-primary text-white min-w-14 rounded-lg disabled:opacity-60"
+                        className="border p-2 bg-primary text-white min-w-14 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
                         onClick={checkUsernameAvailability}
-                        disabled={isChecking || !formData.username}
+                        disabled={isChecking || !formData.username || formData.username.length<2 || typeof validation.username === "string"}
                       >
                         {isChecking ? (
                           <CircularProgress color="white" className="mr-2" />
@@ -439,6 +462,7 @@ export default function SignIn() {
                       name="first_name"
                       placeholder=" "
                       required
+                      minLength={2}
                     />
                     <label htmlFor="first_name">First Name</label>
                   </div>
@@ -456,6 +480,7 @@ export default function SignIn() {
                       name="last_name"
                       placeholder=" "
                       required
+                      minLength={2}
                     />
                     <label htmlFor="last_name">Last Name</label>
                   </div>
@@ -504,14 +529,9 @@ export default function SignIn() {
             className="bg-primary text-white text-lg font-semibold  py-1 px-5 w-[85%] disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={
               isLoading ||
-              (!formData.isChecked &&
-                (typeof validation.email === "string" || !formData.email)) ||
-              (formData.isChecked &&
-                !formData.isRegistered &&
-                Object.values(formData).some((value) => value === "")) ||
-              Object.values(validation).some(
-                (value) => typeof value === "string"
-              ) ||
+              (!formData.isChecked &&  (typeof validation.email === "string" || !formData.email)) ||
+              (formData.isChecked && !formData.isRegistered &&  Object.values(formData).some((value) => value === "")) ||
+              Object.values(validation).some((value) => typeof value === "string" ) ||
               (formData.isRegistered && !formData.verified)
             }
           >
