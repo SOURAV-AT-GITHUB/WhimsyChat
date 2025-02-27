@@ -6,6 +6,8 @@ import {
     SEARCH_USERS_SUCCESS,
     SEARCH_USERS_ERROR,
     RESET_SEARCH,
+    SIGNOUT,
+    OPEN_SNACKBAR
   } from "../actionTypes";
 import axios from "axios"
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
@@ -18,6 +20,10 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
             }})
             dispatch({type:FETCH_CONTACTS_SUCCESS,payload:response.data.data})
         } catch (error) {
+          if(error.status === 401){
+            dispatch({type:SIGNOUT})
+            dispatch({type:OPEN_SNACKBAR,payload:{message:error.response?.data.message ||error.message,severity:'error'}})
+          }
             dispatch({type:FETCH_CONTACTS_ERROR,payload:error.response?.data.message || error.message})
         }
     }
@@ -31,7 +37,13 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
         }})
         dispatch({type:SEARCH_USERS_SUCCESS,payload:response.data.data})
       } catch (error) {
-        dispatch({type:SEARCH_USERS_ERROR,payload:error.response?.data.message||error.message})
+        if(error.status === 401){
+          dispatch({type:SIGNOUT})
+          dispatch({type:OPEN_SNACKBAR,payload:{message:error.response?.data.message ||error.message,severity:'error'}})
+          dispatch(resetSearch())
+        }else{
+          dispatch({type:SEARCH_USERS_ERROR,payload:error.response?.data.message||error.message})
+        }
       }
     }
   }
