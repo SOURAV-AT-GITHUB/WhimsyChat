@@ -1,103 +1,40 @@
-import { useSelector } from "react-redux";
-// import defaultAvatar from "/default-avatar.jpeg";
+import { useSelector, useDispatch } from "react-redux";
+import DefaultAvatar from "/default-avatar.jpeg";
 import SearchIcon from "@mui/icons-material/Search";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SendIcon from "@mui/icons-material/Send";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { connectSocket, getSocket } from "../api/socket";
-// import dummy1 from "/dummy-image-1.png";
-// import dummy2 from "/dummy-image-2.png";
 import DoneIcon from "@mui/icons-material/Done";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import ErrorIcon from "@mui/icons-material/Error";
 import EmojiPicker from "emoji-picker-react";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
-// const singleConversation1 = {
-//   username:"im_sk",
-//   first_name:"SK",
-//   last_name:"Pramanick",
-//   status:"Online",
-//   image:dummy1,
-//   messages:[
-//     {
-//       "_id":"fds4f4sd6",
-//       "message":"Hi",
-//       "receiver":"test_account",
-//       "sender":"im_sk",
-//       "date":1737402041790,//for sorting
-//       "type":"text",//text for now, image or other for later
-//       "status":{
-//         "isSent":1737402042790, //if true then date else false
-//         "isReceived":1737402042790,
-//         "isSeen":false
-//       }
-//     },
-//     {
-//       "_id":"fjhsdf",
-//       "message":"Hello",
-//       "receiver":"im_sk",
-//       "sender":"test_account",
-//       "date":1737402056033,//for sorting
-//       "type":"text",//text for now, image or other for later
-//       "status":{
-//         "isSent":1737402057033, //if true then date else false
-//         "isReceived":1737402057033,
-//         "isSeen":false
-//       }
-//     },
-//   ]
-// }
-// const singleConversation2 = {
-//   username:"test_account",
-//   first_name:"Test",
-//   last_name:"Account",
-//   status:"Online",
-//   image:dummy2,
-//   messages:[
-//     {
-//       "_id":"fds4f4sd6",
-//       "message":"Hi",
-//       "receiver":"test_account",
-//       "sender":"im_sk",
-//       "date":1737402041790,//for sorting
-//       "type":"text",//text for now, image or other for later
-//       "status":{
-//         "isSent":1737402042790, //if true then date else false
-//         "isReceived":1737402042790,
-//         "isSeen":false
-//       }
-//     },
-//     {
-//       "_id":"fjhsdf",
-//       "message":"Hello",
-//       "receiver":"im_sk",
-//       "sender":"test_account",
-//       "date":1737402056033,//for sorting
-//       "type":"text",//text for now, image or other for later
-//       "status":{
-//         "isSent":1737402057033, //if true then date else false
-//         "isReceived":1737402057033,
-//         "isSeen":false
-//       }
-//     },
-//   ]
-// }
-//   const allConversations = [
-// singleConversation1,
-// singleConversation2,
-// singleConversation1,
-// singleConversation2,
-// singleConversation1,
-// singleConversation2,
-//   ]
+import {
+  fetchContacts,
+  searchUsers,
+  resetSearch,
+} from "../store/Contacts/contacts.action";
+import SearchUserSkeleton from "../components/SearchUserSkeleton";
+import CloseIcon from "@mui/icons-material/Close";
+import SearchUserCard from "../components/SearchUserCard";
+
 
 export default function Home() {
   /*____________Hooks and states_____________ */
-  const { token, username } = useSelector((store) => store.authorization);
+  const { token, username, contactsId } = useSelector(
+    (store) => store.authorization
+  );
+  const { contactsLoading, contacts, contactsError } = useSelector(
+    (store) => store.contacts
+  );
+  const { isSearching, searchResult, isSearchError } = useSelector(
+    (store) => store.search
+  );
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [contacts, setContacts] = useState(null);
   const [currentOpenConversation, setCurrentOpenConversation] = useState(null);
   const [message, setMessage] = useState("");
   const [openOptionMenu, setOptionMenu] = useState(false);
@@ -251,17 +188,12 @@ export default function Home() {
   /*_________Pure functions_____________*/
   function formatTime(dateString) {
     const date = new Date(dateString);
-
-    // Use toLocaleString to format time in 12-hour format
     const options = {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
     };
-
-    // Get the formatted time
     const formattedTime = date.toLocaleString("en-US", options);
-
     return formattedTime;
   }
   function toggleOptionMenu() {
@@ -279,46 +211,54 @@ export default function Home() {
   function addEmoji(emoji) {
     setMessage((prev) => (prev += emoji));
   }
+  /*_________dispatch functions */
+  function handlesearchUsers(event) {
+    event.preventDefault();
+    dispatch(searchUsers(token, event.target[0].value));
+    event.target[0].value = "";
+  }
+
   /*__________useEffects_________ */
   useEffect(() => {
     if (!token) {
       return navigate("/signin");
     }
-    connectSocket(token);
-    const socket = getSocket();
-    console.log(socket);
-    if (socket) {
-      socket.on("contacts", (data) => {
-        setContacts(data);
-      });
-    }
-    return () => socket?.disconnect();
-  }, [token]);
+    dispatch(fetchContacts(token, contactsId));
+    /*eslint-disable react-hooks/exhaustive-deps*/
+  }, [token,contactsId]);
   const sendMessage = (event) => {
     event.preventDefault();
-    // const socket = getSocket()
-    // const message = event.target[0].value
-    // console.log(message)
-    // socket.emit("sendMessage",{receiver:message,message,date:Date.now()},(response)=>{
-    //   if(response.status === 'success'){
-    //     console.log('message send')
-    //   }else{
-    //     console.log('message was not send')
-    //   }
-    // })
-    const newMessage = {
-      value: message,
-      type: "text",
-      sender: username,
-      receiver: currentOpenConversation.username,
-      date_time: new Date().toISOString(),
-      status: {
-        isSent: true,
-        isDelivered: true,
-        isSeen: true,
-        isError: false,
-      },
-    };
+    const socket = getSocket();
+    if (socket) {
+      let newMessage = {
+        value: message,
+        type: "text",
+        sender: username,
+        receiver: currentOpenConversation.username,
+        date_time: new Date().toISOString(),
+        status: {
+          isSent: false,
+          isDelivered: false,
+          isSeen: false,
+          isError: false,
+        },
+      };
+      // console.log(newMessage)
+      socket.emit("message", newMessage, (response) => {
+        if (response.status === "success") {
+          console.log("message send");
+          newMessage.status.isSent = true;
+          setConversations((prev) => [...prev, response.message]);
+        } else {
+          console.log(response.error);
+          setConversations((prev) => [...prev, newMessage]);
+        }
+      });
+      setMessage("");
+    }else{
+      alert("You are not connected to server.")
+    }
+
     // setTimeout(() => {
     //   const reply = {
     //     value: message,
@@ -335,8 +275,6 @@ export default function Home() {
     //   };
     //   setConversations((prev) => [...prev, reply]);
     // }, 3500);
-    setConversations((prev) => [...prev, newMessage]);
-    setMessage("");
   };
   useEffect(() => {
     // Define a function to handle key press events
@@ -361,7 +299,10 @@ export default function Home() {
     }
   }, [currentOpenConversation, conversation]);
   return (
-    <main id="main-container" className="relative max-w-screen-xl m-auto   bg-opacity-20  rounded-t-xl overflow-hidden ">
+    <main
+      id="main-container"
+      className="relative max-w-screen-xl m-auto   bg-opacity-20  rounded-t-xl overflow-hidden "
+    >
       <h1 className="max-h-[10vh] font-medium font-serif tracking-wider py-2 pb-4  text-5xl text-center text-white bg-cyan-500 bg-opacity-35">
         Whimsy Chat
       </h1>
@@ -371,76 +312,90 @@ export default function Home() {
           id="home-left"
           className="w-1/4 relative  overflow-y-auto thin-scrollbar transparent-blur-background  flex flex-col gap-2 border-2"
         >
-          <div className="flex items-center justify-between   border border-t-0 bg-white p-2">
+          <form
+            onSubmit={handlesearchUsers}
+            className="relative flex items-center justify-between   border border-t-0 bg-white p-2"
+          >
             <input
               type="text"
               placeholder="Search using username or email"
-              className="w-10/12 pl-2  focus:outline-none placeholder:text-slate-600"
+              required
+              minLength={2}
+              className="w-10/12 pl-2 text-sm  focus:outline-none placeholder:text-slate-600"
             />
-            <SearchIcon />
-          </div>
-          {contacts ? (
+            <button type="submit">
+              <SearchIcon />
+            </button>
+            {(isSearching || searchResult[0] || isSearchError) && (
+              <div className="absolute  top-11 left-0 p-1 w-full  max-h-[300px] overflow-y-auto thin-scrollbar">
+                {isSearching ? (
+                  <div className="flex flex-col gap-1">
+                    <SearchUserSkeleton />
+                    <SearchUserSkeleton />
+                  </div>
+                ) : searchResult[0] ? (
+                  <div className="flex flex-col gap-1">
+                    {searchResult.map((user) => (
+                      <SearchUserCard
+                        key={user._id}
+                        user={user}
+                        stateUpdaterFunction={setCurrentOpenConversation}
+                      />
+                    ))}
+                    
+                  </div>
+                ) : (
+                  isSearchError && (
+                    <p className="bg-white text-red-400 text-center p-2 text-lg rounded-md">
+                      {isSearchError}
+                    </p>
+                  )
+                )}
+                <button
+                      onClick={() => dispatch(resetSearch())}
+                      type="button"
+                      className="bg-primary text-white rounded-lg py-1 w-full mt-1 flex items-center justify-center gap-2"
+                    >
+                      <p>Close Search </p>
+                      <CloseIcon />
+                    </button>
+              </div>
+            )}
+          </form>
+          {contacts[0] ? (
             <div className="flex flex-col gap-2 px-1">
-              {contacts.map((user) => (
-                <div
-                  onClick={() => setCurrentOpenConversation({ ...user })}
-                  className="flex gap-4 p-1 border-b cursor-pointer bg-white rounded-lg"
-                  key={user.username}
-                >
-                  <div className="max-h-[60px]  w-[20%] rounded-full overflow-hidden ">
-                    <img
-                      src={user.image}
-                      alt={user.username}
-                      className="h-full w-full"
-                    />
-                  </div>
+              {contacts.map(
+                (conversation) =>
+                  !conversation.isGroup && (
+                    <div
+                      // onClick={() => setCurrentOpenConversation({ ...user })}
+                      className="flex gap-4 p-1 border-b cursor-pointer bg-white rounded-lg"
+                      key={conversation.participants[0].username}
+                    >
+                      <div className="max-h-[60px]  w-[20%] rounded-full overflow-hidden ">
+                        <img
+                          src={
+                            conversation.participants[0].image || DefaultAvatar
+                          }
+                          alt={conversation.participants[0].username}
+                          className="h-full w-full"
+                        />
+                      </div>
 
-                  <div className="w-[80%]">
+                      <div className="w-[80%]">
+                        <div className="flex justify-between items-center  w-full">
+                          <p>
+                            {conversation.participants[0].first_name}{" "}
+                            {conversation.participants[0].last_name}
+                          </p>
+                          {/* <p className="text-xs">{formatTime(conversation[conversation.length - 1].date_time)}</p> */}
+                        </div>
 
-                    <div className="flex justify-between items-center  w-full">
-                      <p>
-                        {user.first_name} {user.last_name}
-                      </p>
-                  <p className="text-xs">{formatTime(conversation[conversation.length - 1].date_time)}</p>
+                        <div className="flex justify-between items-center"></div>
+                      </div>
                     </div>
-
-                    <div className="flex justify-between items-center"></div>
-                    <p className="flex items-center gap-1">
-                    {conversation[conversation.length - 1].sender === username && (
-                        <Fragment>
-                          {conversation[conversation.length - 1].status.isSeen ||
-                          conversation[conversation.length - 1].status.isDelivered ? (
-                            <DoneAllIcon
-                              sx={{ fontSize: "1rem" }}
-                              className={`${
-                                conversation[conversation.length - 1].status.isSeen
-                                  ? "text-orange-400"
-                                  : "text-slate-500"
-                              }`}
-                            />
-                          ) : conversation[conversation.length - 1].status.isSent ? (
-                            <DoneIcon
-                              sx={{ fontSize: "1rem" }}
-                              className="text-slate-500"
-                            />
-                          ) : conversation[conversation.length - 1].status.isError ? (
-                            <ErrorIcon
-                              sx={{ fontSize: "1rem" }}
-                              className="text-red-500 bg-white rounded-full "
-                            />
-                          ) : (
-                            <ScheduleIcon
-                              sx={{ fontSize: "1rem" }}
-                              className="text-slate-500"
-                            />
-                          )}
-                        </Fragment>
-                      )}
-                      {conversation[conversation.length - 1].value}</p>
-                  </div>
-
-                </div>
-              ))}
+                  )
+              )}
             </div>
           ) : (
             <div className="text-center p-2">
@@ -457,7 +412,7 @@ export default function Home() {
               <div className="flex justify-between items-center h-[10%]  border-2 p-2 bg-white">
                 <div className="flex gap-2 items-center">
                   <img
-                    src={currentOpenConversation.image}
+                    src={currentOpenConversation.image || DefaultAvatar}
                     alt={currentOpenConversation.username}
                     className="max-h-[50px] rounded-full"
                   />
