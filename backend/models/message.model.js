@@ -5,7 +5,7 @@ const messageSchema = new mongoose.Schema({
   type: { type: String, required: true },
   sender: { type: String, required: true },
   status: {
-    isSent: { type: String, default: Date.now },
+    isSent: { type: String, required:true,default: Date() },
     isDelivered: { type: String, default: null },
     isSeen: { type: String, default: null },
     isError: { type: String, default: null },
