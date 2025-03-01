@@ -3,28 +3,39 @@ import DefaultAvatar from "/default-avatar.jpeg";
 import SearchIcon from "@mui/icons-material/Search";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SendIcon from "@mui/icons-material/Send";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { forwardRef, Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { connectSocket, getSocket } from "../api/socket";
-import DoneIcon from "@mui/icons-material/Done";
-import DoneAllIcon from "@mui/icons-material/DoneAll";
-import ScheduleIcon from "@mui/icons-material/Schedule";
-import ErrorIcon from "@mui/icons-material/Error";
+// import { connectSocket, getSocket } from "../api/socket";
 import EmojiPicker from "emoji-picker-react";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import {
   fetchContacts,
   searchUsers,
   resetSearch,
-} from "../store/Contacts/contacts.action";
+} from "../store/Contacts/contacts.actions";
 import SearchUserSkeleton from "../components/SearchUserSkeleton";
 import CloseIcon from "@mui/icons-material/Close";
-import SearchUserCard from "../components/SearchUserCard";
+import UserContactCard from "../components/UserContactCard";
+import axios from "axios";
+import {
+  OPEN_SNACKBAR,
+  ADD_ONE_MESSAGE,
+  UPDATE_ONE_MESSAGE,
+  ADD_NEW_CONTACT,
+} from "../store/actionTypes";
+import MessageCard from "../components/MessageCard";
+import { CircularProgress, DialogActions, DialogTitle } from "@mui/material";
+import { getAllMessages } from "../store/Messages/messages.action";
+import Dialog from "@mui/material/Dialog";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import Slide from "@mui/material/Slide";
 
-
+const Transition = forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 export default function Home() {
   /*____________Hooks and states_____________ */
-  const { token, username, contactsId } = useSelector(
+  const { token, contactsId, mongoId } = useSelector(
     (store) => store.authorization
   );
   const { contactsLoading, contacts, contactsError } = useSelector(
@@ -33,6 +44,9 @@ export default function Home() {
   const { isSearching, searchResult, isSearchError } = useSelector(
     (store) => store.search
   );
+  const { messagesLoading, allMessages, messagesError } = useSelector(
+    (store) => store.allMessages
+  );
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [currentOpenConversation, setCurrentOpenConversation] = useState(null);
@@ -40,162 +54,16 @@ export default function Home() {
   const [openOptionMenu, setOptionMenu] = useState(false);
   const [openEmojis, setOpenEmojis] = useState(false);
   const conversationContainer = useRef(null);
-  const [conversation, setConversations] = useState([
-    {
-      value: "Hi!",
-      type: "text",
-      sender: "Test user 2",
-      receiver: username || "Text user 1",
-      date_time: "2025-01-21T15:54:29.360Z",
-      status: {
-        isSent: true,
-        isDelivered: true,
-        isSeen: true,
-        isError: false,
-      },
-    },
-    {
-      value: "Hello",
-      type: "text",
-      sender: username || "Text user 1",
-      receiver: "Test user 2",
-      date_time: "2025-01-21T15:55:29.360Z",
-      status: {
-        isSent: true,
-        isDelivered: true,
-        isSeen: true,
-        isError: false,
-      },
-    },
-    {
-      value: "How are you?",
-      type: "text",
-      sender: "Test user 2",
-      receiver: username || "Text user 1",
-      date_time: "2025-01-21T15:56:29.360Z",
-      status: {
-        isSent: true,
-        isDelivered: true,
-        isSeen: true,
-        isError: false,
-      },
-    },
-    {
-      value: "I'm Fine. \n What about you ?",
-      type: "text",
-      sender: username || "Text user 1",
-      receiver: "Test user 2",
-      date_time: "2025-01-21T15:57:29.360Z",
-      status: {
-        isSent: true,
-        isDelivered: true,
-        isSeen: false,
-        isError: false,
-      },
-    },
-    {
-      value: "I'm also fine.",
-      type: "text",
-      sender: "Test user 2",
-      receiver: username || "Text user 1",
-      date_time: "2025-01-21T15:58:29.360Z",
-      status: {
-        isSent: true,
-        isDelivered: true,
-        isSeen: true,
-        isError: false,
-      },
-    },
-    {
-      value: "Hi!",
-      type: "text",
-      sender: "Test user 2",
-      receiver: username || "Text user 1",
-      date_time: "2025-01-21T15:59:29.360Z",
-      status: {
-        isSent: true,
-        isDelivered: true,
-        isSeen: true,
-        isError: false,
-      },
-    },
-    {
-      value: "Hello",
-      type: "text",
-      sender: username || "Text user 1",
-      receiver: "Test user 2",
-      date_time: "2025-01-21T16:00:29.360Z",
-      status: {
-        isSent: true,
-        isDelivered: false,
-        isSeen: false,
-        isError: false,
-      },
-    },
-    {
-      value: "How are you?",
-      type: "text",
-      sender: "Test user 2",
-      receiver: username || "Text user 1",
-      date_time: "2025-01-21T16:01:29.360Z",
-      status: {
-        isSent: true,
-        isDelivered: false,
-        isSeen: false,
-        isError: false,
-      },
-    },
-    {
-      value: "I'm Fine. \n What about you ?",
-      type: "text",
-      sender: username || "Text user 1",
-      receiver: "Test user 2",
-      date_time: "2025-01-21T16:02:29.360Z",
-      status: {
-        isSent: false,
-        isDelivered: false,
-        isSeen: false,
-        isError: true,
-      },
-    },
-    {
-      value: "I'm also fine.",
-      type: "text",
-      sender: "Test user 2",
-      receiver: username || "Text user 1",
-      date_time: "2025-01-21T16:03:29.360Z",
-      status: {
-        isSent: false,
-        isDelivered: false,
-        isSeen: false,
-        isError: false,
-      },
-    },
-    {
-      value: "Good ",
-      type: "text",
-      sender: username || "Text user 1",
-      receiver: "Test user 2",
-      date_time: "2025-01-21T16:04:29.360Z",
-      status: {
-        isSent: false,
-        isDelivered: false,
-        isSeen: false,
-        isError: false,
-      },
-    },
-  ]);
+  const [isSending, setIsSending] = useState(false);
+  const messageQueue = useRef([]);
+  const messageInputRef = useRef(null);
+  const [createContactConfirmationDialog, setcreateContactConfirmationModal] =
+    useState(false);
+  const createContactQueue = useRef([]);
+  const [isContactCreating, setIsContactCreating] = useState(false);
+
   /*_________Pure functions_____________*/
-  function formatTime(dateString) {
-    const date = new Date(dateString);
-    const options = {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    };
-    const formattedTime = date.toLocaleString("en-US", options);
-    return formattedTime;
-  }
+
   function toggleOptionMenu() {
     setOptionMenu((prev) => !prev);
   }
@@ -211,99 +79,176 @@ export default function Home() {
   function addEmoji(emoji) {
     setMessage((prev) => (prev += emoji));
   }
+  function closeConversationonEsc(event) {
+    if (isSending) return;
+    if (event.key === "Escape") {
+      setCurrentOpenConversation(null);
+    }
+  }
+  function opencreateContactConfirmationDialog(event) {
+    event.preventDefault();
+    setcreateContactConfirmationModal(true);
+  }
+  function closecreateContactConfirmationDialog() {
+    setcreateContactConfirmationModal(false);
+  }
+
   /*_________dispatch functions */
   function handlesearchUsers(event) {
     event.preventDefault();
-    dispatch(searchUsers(token, event.target[0].value));
+    dispatch(searchUsers(token, event.target[0].value, contacts));
     event.target[0].value = "";
   }
+  function openSnackbar(message, severity) {
+    dispatch({ type: OPEN_SNACKBAR, payload: { message, severity } });
+  }
+  /*_______async functions */
 
+  function sendMessage(event) {
+    event.preventDefault();
+    const newMessage = {
+      value: message,
+      type: "text",
+      sender: mongoId,
+      receiver: currentOpenConversation.participants[0]._id, //needed only for first messsage
+      status: {
+        isSent: null,
+        isDelivered: null,
+        isSeen: null,
+        isError: null,
+      },
+      createdAt: Date(),
+      conversationId: currentOpenConversation._id || null,
+    };
+    if (!currentOpenConversation._id) {
+      createContactQueue.current.push(newMessage);
+      setIsContactCreating(true);
+      setMessage("");
+      if (messageInputRef.current) messageInputRef.current.focus();
+      if (!isSending) createContactAndSendMessage();
+      return;
+    }
+    newMessage._id = Date.now();
+    messageQueue.current.push(newMessage);
+    dispatch({
+      type: ADD_ONE_MESSAGE,
+      payload: newMessage,
+    });
+    setMessage("");
+    if (messageInputRef.current) messageInputRef.current.focus();
+    if (!isSending) sendNextMessage();
+  }
+  async function sendNextMessage() {
+    if (messageQueue.current.length === 0) return;
+
+    setIsSending(true);
+    const currentMessage = messageQueue.current[0];
+    const messageAfter_idRemove = { ...currentMessage };
+    delete messageAfter_idRemove._id;
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/messages`,
+        messageAfter_idRemove,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      dispatch({
+        type: UPDATE_ONE_MESSAGE,
+        payload: { message: response.data.data, oldId: currentMessage._id },
+      });
+      messageQueue.current.shift();
+    } catch (error) {
+      console.log(error);
+      dispatch(
+        openSnackbar(error.response?.data.message || error.message, "error")
+      );
+      dispatch({ type: ADD_ONE_MESSAGE, payload: currentMessage });
+      messageQueue.current.shift();
+    } finally {
+      setIsSending(false);
+
+      if (createContactQueue.current.length > 0) createContactAndSendMessage();
+      else sendNextMessage();
+    }
+  }
+  async function createContactAndSendMessage() {
+    try {
+      setIsContactCreating(true);
+      const newMessage = createContactQueue.current[0];
+      const messageAfter_idRemove = { ...newMessage };
+      delete messageAfter_idRemove._id;
+      const response = await axios.post(
+        `${BACKEND_URL}/messages`,
+        messageAfter_idRemove,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      dispatch({
+        type: ADD_NEW_CONTACT,
+        payload: response.data.data.newConversation,
+      });
+      dispatch({
+        type: ADD_ONE_MESSAGE,
+        payload: response.data.data.newMessage,
+      });
+      dispatch(resetSearch());
+      setcreateContactConfirmationModal(false);
+      console.log(response.data.data.newConversation);
+      setCurrentOpenConversation(response.data.data.newConversation);
+      openSnackbar(response.data.message || "Success", "success");
+    } catch (error) {
+      console.log(error);
+      openSnackbar(error.response?.data.message || error.message, "error");
+    } finally {
+      createContactQueue.current.shift();
+      setIsContactCreating(false);
+      sendNextMessage();
+    }
+  }
   /*__________useEffects_________ */
   useEffect(() => {
+    //fetch contacts or navigate to signin
     if (!token) {
       return navigate("/signin");
     }
     dispatch(fetchContacts(token, contactsId));
     /*eslint-disable react-hooks/exhaustive-deps*/
-  }, [token,contactsId]);
-  const sendMessage = (event) => {
-    event.preventDefault();
-    const socket = getSocket();
-    if (socket) {
-      let newMessage = {
-        value: message,
-        type: "text",
-        sender: username,
-        receiver: currentOpenConversation.username,
-        date_time: new Date().toISOString(),
-        status: {
-          isSent: false,
-          isDelivered: false,
-          isSeen: false,
-          isError: false,
-        },
-      };
-      // console.log(newMessage)
-      socket.emit("message", newMessage, (response) => {
-        if (response.status === "success") {
-          console.log("message send");
-          newMessage.status.isSent = true;
-          setConversations((prev) => [...prev, response.message]);
-        } else {
-          console.log(response.error);
-          setConversations((prev) => [...prev, newMessage]);
-        }
-      });
-      setMessage("");
-    }else{
-      alert("You are not connected to server.")
-    }
-
-    // setTimeout(() => {
-    //   const reply = {
-    //     value: message,
-    //     type: "text",
-    //     sender: currentOpenConversation.username,
-    //     receiver: username,
-    //     date_time: new Date().toISOString(),
-    //     status: {
-    //       isSent: true,
-    //       isDelivered: true,
-    //       isSeen: true,
-    //       isError: false,
-    //     },
-    //   };
-    //   setConversations((prev) => [...prev, reply]);
-    // }, 3500);
-  };
+  }, [token, contactsId]);
+  useEffect(
+    //fetch messages
+    function getMessage() {
+      if (!contacts[0]) return;
+        console.log("messages fetched")
+        contacts.forEach((contact) =>
+          dispatch(getAllMessages(token, contact._id))
+        );
+    },
+    [contactsLoading]
+  );
   useEffect(() => {
-    // Define a function to handle key press events
-    const handleKeyPress = (event) => {
-      if (event.key === "Escape") {
-        setCurrentOpenConversation(null);
-      }
-    };
-
-    // Add event listener when the component mounts
-    window.addEventListener("keydown", handleKeyPress);
-
-    // Cleanup the event listener when the component unmounts
+    //close conversation on Esc
+    window.addEventListener("keydown", closeConversationonEsc);
     return () => {
-      window.removeEventListener("keydown", handleKeyPress);
+      window.removeEventListener("keydown", closeConversationonEsc);
     };
   }, []);
-  useEffect(() => {
-    if (conversationContainer?.current) {
-      conversationContainer.current.scrollTop =
-        conversationContainer.current.scrollHeight;
-    }
-  }, [currentOpenConversation, conversation]);
+  useEffect(
+    //scroll to bottom chats
+    function scrollToBottomChat() {
+      if (conversationContainer?.current) {
+        conversationContainer.current.scrollTop =
+          conversationContainer.current.scrollHeight;
+      }
+      if (messageInputRef.current) messageInputRef.current.focus();
+    },
+    [currentOpenConversation, allMessages]
+  );
   return (
     <main
       id="main-container"
       className="relative max-w-screen-xl m-auto   bg-opacity-20  rounded-t-xl overflow-hidden "
     >
-      <h1 className="max-h-[10vh] font-medium font-serif tracking-wider py-2 pb-4  text-5xl text-center text-white bg-cyan-500 bg-opacity-35">
+      <h1 className="max-h-[10vh] font-medium font-serif tracking-wider py-2 pb-4 select-none text-5xl text-center text-white bg-cyan-500 bg-opacity-35">
         Whimsy Chat
       </h1>
 
@@ -321,79 +266,92 @@ export default function Home() {
               placeholder="Search using username or email"
               required
               minLength={2}
-              className="w-10/12 pl-2 text-sm  focus:outline-none placeholder:text-slate-600"
+              className="w-10/12 pl-2 text-[10px] sm:text-xs  focus:outline-none placeholder:text-slate-600"
             />
             <button type="submit">
               <SearchIcon />
             </button>
-            {(isSearching || searchResult[0] || isSearchError) && (
-              <div className="absolute  top-11 left-0 p-1 w-full  max-h-[300px] overflow-y-auto thin-scrollbar">
-                {isSearching ? (
-                  <div className="flex flex-col gap-1">
-                    <SearchUserSkeleton />
-                    <SearchUserSkeleton />
-                  </div>
-                ) : searchResult[0] ? (
-                  <div className="flex flex-col gap-1">
-                    {searchResult.map((user) => (
-                      <SearchUserCard
-                        key={user._id}
-                        user={user}
-                        stateUpdaterFunction={setCurrentOpenConversation}
-                      />
-                    ))}
-                    
-                  </div>
-                ) : (
-                  isSearchError && (
-                    <p className="bg-white text-red-400 text-center p-2 text-lg rounded-md">
-                      {isSearchError}
-                    </p>
-                  )
-                )}
-                <button
-                      onClick={() => dispatch(resetSearch())}
-                      type="button"
-                      className="bg-primary text-white rounded-lg py-1 w-full mt-1 flex items-center justify-center gap-2"
-                    >
-                      <p>Close Search </p>
-                      <CloseIcon />
-                    </button>
-              </div>
-            )}
           </form>
-          {contacts[0] ? (
+          {isSearching ||
+          searchResult.existingResult[0] ||
+          searchResult.newResult[0] ||
+          isSearchError ? (
+            <div className="w-full overflow-y-auto thin-scrollbar">
+              <button
+                onClick={() => dispatch(resetSearch())}
+                type="button"
+                className="mb-2 bg-primary text-white rounded-lg py-1 w-full flex items-center justify-center gap-2"
+              >
+                <p>Close Search </p>
+                <CloseIcon />
+              </button>
+              {isSearching ? (
+                <div className="flex flex-col gap-1">
+                  <SearchUserSkeleton />
+                  <SearchUserSkeleton />
+                </div>
+              ) : searchResult.existingResult[0] ||
+                searchResult.newResult[0] ? (
+                <div className="flex flex-col gap-1 px-1">
+                  {searchResult.existingResult[0] && (
+                    <div className="flex flex-col gap-1">
+                      <p className="bg-white p-1 rounded-md text-center text-primary text-sm">
+                        Esixting contacts
+                      </p>
+                      {searchResult.existingResult.map((conversation) => (
+                        <UserContactCard
+                          key={conversation._id}
+                          conversation={conversation}
+                          lastMessage={
+                            allMessages[conversation._id]?.[
+                              allMessages[conversation._id].length - 1
+                            ]
+                          }
+                          mongoId={mongoId}
+                          stateUpdaterFunction={setCurrentOpenConversation}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {searchResult.newResult[0] && (
+                    <div className="flex flex-col gap-1">
+                      <p className="bg-white p-1 rounded-md text-center text-primary text-sm">
+                        Not in contacts
+                      </p>
+                      {searchResult.newResult.map((conversation) => (
+                        <UserContactCard
+                          key={conversation.participants[0]._id}
+                          conversation={conversation}
+                          stateUpdaterFunction={setCurrentOpenConversation}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                isSearchError && (
+                  <p className="bg-white text-red-400 text-center p-2 text-lg rounded-md">
+                    {isSearchError}
+                  </p>
+                )
+              )}
+            </div>
+          ) : contacts[0] ? (
             <div className="flex flex-col gap-2 px-1">
               {contacts.map(
                 (conversation) =>
                   !conversation.isGroup && (
-                    <div
-                      // onClick={() => setCurrentOpenConversation({ ...user })}
-                      className="flex gap-4 p-1 border-b cursor-pointer bg-white rounded-lg"
-                      key={conversation.participants[0].username}
-                    >
-                      <div className="max-h-[60px]  w-[20%] rounded-full overflow-hidden ">
-                        <img
-                          src={
-                            conversation.participants[0].image || DefaultAvatar
-                          }
-                          alt={conversation.participants[0].username}
-                          className="h-full w-full"
-                        />
-                      </div>
-
-                      <div className="w-[80%]">
-                        <div className="flex justify-between items-center  w-full">
-                          <p>
-                            {conversation.participants[0].first_name}{" "}
-                            {conversation.participants[0].last_name}
-                          </p>
-                          {/* <p className="text-xs">{formatTime(conversation[conversation.length - 1].date_time)}</p> */}
-                        </div>
-
-                        <div className="flex justify-between items-center"></div>
-                      </div>
-                    </div>
+                    <UserContactCard
+                      key={conversation._id}
+                      conversation={conversation}
+                      lastMessage={
+                        allMessages[conversation._id]?.[
+                          allMessages[conversation._id].length - 1
+                        ]
+                      }
+                      mongoId={mongoId}
+                      stateUpdaterFunction={setCurrentOpenConversation}
+                    />
                   )
               )}
             </div>
@@ -412,14 +370,17 @@ export default function Home() {
               <div className="flex justify-between items-center h-[10%]  border-2 p-2 bg-white">
                 <div className="flex gap-2 items-center">
                   <img
-                    src={currentOpenConversation.image || DefaultAvatar}
-                    alt={currentOpenConversation.username}
+                    src={
+                      currentOpenConversation.participants[0].image ||
+                      DefaultAvatar
+                    }
+                    alt={currentOpenConversation.participants[0].username}
                     className="max-h-[50px] rounded-full"
                   />
                   <div>
                     <p>
-                      {currentOpenConversation.first_name}{" "}
-                      {currentOpenConversation.last_name}
+                      {currentOpenConversation.participants[0].first_name}{" "}
+                      {currentOpenConversation.participants[0].last_name}
                     </p>
                   </div>
                 </div>
@@ -473,61 +434,34 @@ export default function Home() {
                 className="h-[80%]  overflow-y-auto thin-scrollbar flex flex-col gap-4  p-2"
                 ref={conversationContainer}
               >
-                {conversation.map((message, index) => (
-                  <div
-                    className={`h-fit w-fit max-w-[90%] p-1 flex flex-col ${
-                      username == message.sender
-                        ? "self-end bg-teal-500 text-white"
-                        : "border-2 bg-white"
-                    }  rounded-lg shadow-xl`}
-                    key={index}
-                  >
-                    <div className="min-w-[50px] text-lg mr-8 ml-2">
-                      {message.value.split("\n").map((para, index) => (
-                        <p key={index}>{para}</p>
-                      ))}
-                    </div>
-                    <div className="flex gap-1 items-end self-end">
-                      <p className="text-xs text-right">
-                        {formatTime(message.date_time)}
-                      </p>
-                      {username === message.sender && (
-                        <Fragment>
-                          {message.status.isSeen ||
-                          message.status.isDelivered ? (
-                            <DoneAllIcon
-                              sx={{ fontSize: "1rem" }}
-                              className={`${
-                                message.status.isSeen
-                                  ? "text-orange-400"
-                                  : "text-slate-300"
-                              }`}
-                            />
-                          ) : message.status.isSent ? (
-                            <DoneIcon
-                              sx={{ fontSize: "1rem" }}
-                              className="text-slate-300"
-                            />
-                          ) : message.status.isError ? (
-                            <ErrorIcon
-                              sx={{ fontSize: "1rem" }}
-                              className="text-red-500 bg-white rounded-full "
-                            />
-                          ) : (
-                            <ScheduleIcon
-                              sx={{ fontSize: "1rem" }}
-                              className="text-slate-300"
-                            />
-                          )}
-                        </Fragment>
-                      )}
-                    </div>
+                {allMessages[currentOpenConversation._id] &&
+                allMessages[currentOpenConversation._id][0] ? (
+                  allMessages[currentOpenConversation._id].map(
+                    (message, index) => (
+                      <MessageCard
+                        message={message}
+                        mongoId={mongoId}
+                        key={index}
+                      />
+                    )
+                  )
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center ">
+                    <p className="text-4xl text-white shadow-md p-2 rounded-md select-none">
+                      {allMessages[currentOpenConversation._id]
+                        ? "No Messages"
+                        : "Message user to add them"}
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
 
               <form
-                onSubmit={sendMessage}
+                onSubmit={
+                  currentOpenConversation && currentOpenConversation._id
+                    ? sendMessage
+                    : opencreateContactConfirmationDialog
+                }
                 className="h-[10%] w-full relative  bg-white flex items-center justify-between px-4 gap-4"
               >
                 <input
@@ -535,9 +469,12 @@ export default function Home() {
                   placeholder="Enter message"
                   className="thin-scrollbar resize-none  bg-transparent max-h-full  w-full pl-2 text-black text-lg  placeholder:text-black  focus:outline-none"
                   required
+                  maxLength={1000}
                   value={message}
+                  ref={messageInputRef}
                   onChange={(e) => setMessage(e.target.value)}
                 />
+                {message.length>500 && <p className={`text-sm ${message.length>500 && "text-red-500"}`}>{message.length}/1000</p>}
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
@@ -548,7 +485,7 @@ export default function Home() {
                       fontSize="large"
                       className="text-white bg-teal-500 rounded-full"
                     />
-                    {openEmojis && (
+                    {openEmojis && currentOpenConversation && (
                       <div className="absolute bottom-0 right-16  ">
                         <EmojiPicker
                           // open={openEmojis}
@@ -567,7 +504,7 @@ export default function Home() {
                     <button
                       type="submit"
                       className={`${
-                        message ? "scale-100" : "scale-0"
+                        message.trim() ? "scale-100" : "scale-0"
                       } transition-transform duration-200 ease-in-out bg-teal-500 p-2 pl-3 shadow-2xl  rounded-full flex items-center justify-center`}
                     >
                       <SendIcon className="text-white" />
@@ -588,6 +525,66 @@ export default function Home() {
           )}
         </section>
       </div>
+
+      <Dialog
+        open={Boolean(
+          currentOpenConversation &&
+            !currentOpenConversation._id &&
+            createContactConfirmationDialog
+        )}
+        // fullScreen
+        TransitionComponent={Transition}
+        sx={{
+          "& .css-10d30g3-MuiPaper-root-MuiDialog-paper": {
+            backgroundColor: "transparent",
+            // boxShadow: 'none',
+          },
+          "& .css-l09ud3-MuiPaper-root-MuiDialog-paper": {
+            backgroundColor: "transparent",
+            // boxShadow: 'none',
+          },
+          // '& .MuiBackdrop-root': {
+          //   backgroundColor: 'transparent',
+          // }
+        }}
+      >
+        <DialogTitle className="bg-primary text-white">
+          Add {currentOpenConversation?.participants[0].first_name}{" "}
+          {currentOpenConversation?.participants[0].last_name} in your contacts
+          ?
+        </DialogTitle>
+        <div className="min-h-[100px] p-2 flex items-start justify-center transparent-blur-background">
+          <p className="text-white text-lg">
+            By sending first message to{" "}
+            {currentOpenConversation?.participants[0].first_name}{" "}
+            {currentOpenConversation?.participants[0].last_name}, you will add
+            Him/Her into your contacts.
+          </p>
+        </div>
+        <DialogActions>
+          {isContactCreating ? (
+            <button className="flex items-center justify-center gap-2 text-xl p-2 rounded-md bg-primary text-white min-w-[150px]">
+              <p>Adding...</p> <CircularProgress sx={{ color: "white" }} />
+            </button>
+          ) : (
+            <Fragment>
+              <button
+                className="w-[100px] h-[40px] text-lg bg-red-500 text-white rounded-md disabled:opacity-50"
+                onClick={closecreateContactConfirmationDialog}
+              >
+                Cancle
+              </button>
+              <button
+                onClick={sendMessage}
+                className="w-[100px] h-[40px] text-lg bg-primary text-white rounded-md disabled:opacity-50"
+              >
+                <p>Confirm</p>
+              </button>
+            </Fragment>
+          )}
+        </DialogActions>
+      </Dialog>
+      
     </main>
   );
 }
