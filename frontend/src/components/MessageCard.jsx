@@ -18,7 +18,7 @@ export default function MessageCard({ message, mongoId }) {
   }
   return (
     <div
-      className={`h-fit w-fit max-w-[90%] p-1 flex flex-col ${
+      className={`h-fit w-fit max-w-[90%] sm:max-w-[70%] p-1 pt-2 flex flex-col ${
         mongoId == message.sender
           ? "self-end bg-teal-500 text-white"
           : "border-2 bg-white"
