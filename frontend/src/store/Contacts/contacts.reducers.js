@@ -6,6 +6,7 @@ import {
   SEARCH_USERS_SUCCESS,
   SEARCH_USERS_ERROR,
   RESET_SEARCH,
+  ADD_NEW_CONTACT,
 } from "../actionTypes";
 const defaultContactsState = {
   contactsLoading: false,
@@ -14,7 +15,7 @@ const defaultContactsState = {
 };
 const defaultSearchusersState = {
   isSearching: false,
-  searchResult: [],
+  searchResult: {newResult:[],existingResult:[]},
   isSearchError: null,
 };
 export function contactsReducer(
@@ -40,6 +41,11 @@ export function contactsReducer(
         contacts: [],
         contactsError: payload,
       });
+      case ADD_NEW_CONTACT:{
+        const contacts = [...state.contacts]
+        contacts.unshift(payload)
+        return state ={...state,contacts}
+      }
     default:
       return state;
   }
@@ -55,7 +61,7 @@ export function searchUsersReducer(
     case SEARCH_USERS_REQUEST:
       return (state = {
         isSearching: true,
-        searchResult: [],
+        searchResult: {newResult:[],existingResult:[]},
         isSearchError: null,
       });
     case SEARCH_USERS_SUCCESS:
@@ -67,7 +73,7 @@ export function searchUsersReducer(
     case SEARCH_USERS_ERROR:
       return (state = {
         isSearching: false,
-        searchResult: [],
+        searchResult: {newResult:[],existingResult:[]},
         isSearchError: payload,
       });
     default:
