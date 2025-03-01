@@ -3,8 +3,7 @@ const {Server } = require("socket.io")
 const jwt = require("jsonwebtoken")
 
 const connectedUsers = new Map()
-const MessageModel = require("../models/message.model")
-const getContacts = require("../controllers/contact.fetch")
+
 module.exports = function setupSocket(server){
     const io = new Server (server,{
         cors:{
@@ -28,36 +27,16 @@ module.exports = function setupSocket(server){
     })
     //on connection
     io.on('connection',async(socket)=>{
-        const username = socket.user.username
+        const {username} = socket.user
+        const {mongoId} = socket.user
         connectedUsers.set(username,socket.id)
         console.log(`${username} connected with id ${socket.id}`)
-        try {
-            const contacts = await getContacts(username)
-            io.to(socket.id).emit('contacts',contacts)
-        } catch (error) {
-            console.log(error)
-            io.to(socket.id).emit('contacts',{contacts:null})
-        }
+
         socket.on("disconnect",()=>{
             connectedUsers.delete(username)
             console.log(`${username} disconnected`)
         }) 
-        socket.on("sendMessage",async({receiver,message,date},callback)=>{
-            try {
-                
-                const newMessage = new MessageModel({message,receiver,date,sender:username,status:{isSent:Date.now(),isDelivered:false,isSeen:false}})
-                if(connectedUsers.has(receiver)){
-                    newMessage.status.isDelivered = Date.now()
-                    console.log(`message send to ${receiver} from ${username}`)
-                    io.to(connectedUsers.get(receiver)).emit("sendMessage",data)
-                }
-                console.log(`message not send to ${receiver} from ${username}`)
-                await newMessage.save()
-                callback({status:'success',data})
-            } catch (error) {
-                callback({status:'error',message:error.message})
-            }
-        })
+
     })
 
     
