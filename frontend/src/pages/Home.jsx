@@ -29,7 +29,8 @@ import { getAllMessages } from "../store/Messages/messages.action";
 import Dialog from "@mui/material/Dialog";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 import Slide from "@mui/material/Slide";
-
+import WifiOffIcon from "@mui/icons-material/WifiOff";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -47,6 +48,7 @@ export default function Home() {
   const { messagesLoading, allMessages, messagesError } = useSelector(
     (store) => store.allMessages
   );
+  console.log(contactsError, messagesError);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [currentOpenConversation, setCurrentOpenConversation] = useState(null);
@@ -218,10 +220,10 @@ export default function Home() {
     //fetch messages
     function getMessage() {
       if (!contacts[0]) return;
-        console.log("messages fetched")
-        contacts.forEach((contact) =>
-          dispatch(getAllMessages(token, contact._id))
-        );
+      console.log("messages fetched");
+      contacts.forEach((contact) =>
+        dispatch(getAllMessages(token, contact._id))
+      );
     },
     [contactsLoading]
   );
@@ -474,7 +476,15 @@ export default function Home() {
                   ref={messageInputRef}
                   onChange={(e) => setMessage(e.target.value)}
                 />
-                {message.length>500 && <p className={`text-sm ${message.length>500 && "text-red-500"}`}>{message.length}/1000</p>}
+                {message.length > 500 && (
+                  <p
+                    className={`text-sm ${
+                      message.length > 500 && "text-red-500"
+                    }`}
+                  >
+                    {message.length}/1000
+                  </p>
+                )}
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
@@ -525,7 +535,7 @@ export default function Home() {
           )}
         </section>
       </div>
-
+      {/*New conversation confirmation dialog */}
       <Dialog
         open={Boolean(
           currentOpenConversation &&
@@ -584,7 +594,46 @@ export default function Home() {
           )}
         </DialogActions>
       </Dialog>
-      
+      {/*Initial loading or error dialog */}
+      <Dialog
+        open={Boolean(
+          contactsLoading || contactsError || messagesLoading || messagesError
+        )}
+        fullScreen
+        sx={{
+          "& .css-10d30g3-MuiPaper-root-MuiDialog-paper": {
+            backgroundColor: "transparent",
+          },
+          "& .css-l09ud3-MuiPaper-root-MuiDialog-paper": {
+            backgroundColor: "transparent",
+          },
+        }}
+      >
+        <div className="w-full h-full flex flex-col items-center justify-center gap-4 transparent-blur-background ">
+          <h1 className="text-7xl font-semibold text-teal-500">Whimsy Chat</h1>
+          {contactsError || messagesError ? (
+            <div className="flex items-center justify-center gap-4 text-white">
+              {contactsError === "Network Error" ||
+              messagesError === "Network Error" ? (
+                <Fragment>
+                  <p className="text-4xl">You are offline</p>
+                  <WifiOffIcon sx={{ height: "75px", width: "75px" }} />
+                </Fragment>
+              ) : (
+                <Fragment>
+                  <p className="text-4xl">{contactsError || messagesError}</p>
+                  <ErrorOutlineIcon sx={{ height: "75px", width: "75px" }} />
+                </Fragment>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-4 text-white">
+              <p className="text-5xl">Loading...</p>
+              <CircularProgress size="4rem" sx={{ color: "white" }} />
+            </div>
+          )}
+        </div>
+      </Dialog>
     </main>
   );
 }
