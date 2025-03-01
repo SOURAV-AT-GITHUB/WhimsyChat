@@ -3,9 +3,15 @@ import DefaultAvatar from "/default-avatar.jpeg";
 import SearchIcon from "@mui/icons-material/Search";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SendIcon from "@mui/icons-material/Send";
-import { forwardRef, Fragment, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  Fragment,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
-// import { connectSocket, getSocket } from "../api/socket";
 import EmojiPicker from "emoji-picker-react";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import {
@@ -31,6 +37,14 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 import Slide from "@mui/material/Slide";
 import WifiOffIcon from "@mui/icons-material/WifiOff";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import { SocketContext } from "../context/socketContext";
+import {
+  SOCKET_DISCONNECTED,
+  SOCKET_CONNECTING,
+  SOCKET_CONNECTED,
+  SOCKET_ERROR,
+} from "../constants/socketStatus";
+import RefreshIcon from '@mui/icons-material/Refresh';
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -48,7 +62,8 @@ export default function Home() {
   const { messagesLoading, allMessages, messagesError } = useSelector(
     (store) => store.allMessages
   );
-  console.log(contactsError, messagesError);
+  const { socket, socketStatus } = useContext(SocketContext);
+  console.log(socketStatus);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [currentOpenConversation, setCurrentOpenConversation] = useState(null);
@@ -597,7 +612,11 @@ export default function Home() {
       {/*Initial loading or error dialog */}
       <Dialog
         open={Boolean(
-          contactsLoading || contactsError || messagesLoading || messagesError
+          contactsLoading ||
+            contactsError ||
+            messagesLoading ||
+            messagesError ||
+            socketStatus !== SOCKET_CONNECTED
         )}
         fullScreen
         sx={{
@@ -611,17 +630,24 @@ export default function Home() {
       >
         <div className="w-full h-full flex flex-col items-center justify-center gap-4 transparent-blur-background ">
           <h1 className="text-7xl font-semibold text-teal-500">Whimsy Chat</h1>
-          {contactsError || messagesError ? (
+          {contactsError || messagesError || socketStatus === SOCKET_ERROR ? (
             <div className="flex items-center justify-center gap-4 text-white">
               {contactsError === "Network Error" ||
-              messagesError === "Network Error" ? (
-                <Fragment>
+              messagesError === "Network Error" ||
+              socketStatus !== SOCKET_ERROR ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-2">
+
                   <p className="text-4xl">You are offline</p>
                   <WifiOffIcon sx={{ height: "75px", width: "75px" }} />
-                </Fragment>
+                  </div>
+                  <button className="flex items-center gap-2 text-4xl bg-primary p-1 px-2 rounded-lg" onClick={()=>location.reload()}><p>Refresh</p>  <RefreshIcon sx={{ height: "50px", width: "50px" }} /></button>
+                </div>
               ) : (
                 <Fragment>
-                  <p className="text-4xl">{contactsError || messagesError}</p>
+                  <p className="text-4xl">
+                    {contactsError || messagesError || (SOCKET_ERROR && "Unable to connect to server.")}
+                  </p>
                   <ErrorOutlineIcon sx={{ height: "75px", width: "75px" }} />
                 </Fragment>
               )}
