@@ -12,18 +12,32 @@ ContactsRouter.get("/fetch-contacts/:contact_id",verifyToken,async(req,res)=>{
         const user = await UserModel.findById(req.user.mongoId)
         if(!user) return res.status(404).json({message:"User not found"})
         if(user.contacts.toString() !== contact_id) return res.status(403).json({message:"You are not authorized to access this contacts"})
-        const contactList = await ContactsModel.findById(contact_id).populate("contacts")
+        const contactList = await ContactsModel.findById(contact_id).populate({
+            path: "contacts",
+            populate: {
+              path: "participants",
+              select: "-password -verified -contacts",  
+            },
+          })
 
-        if(contactList){
-        await   Promise.all(
-         contactList.contacts.map(async(eachConversation)=>{
-             await eachConversation.populate("participants")
-            eachConversation.participants = eachConversation.participants.filter(user=>user._id.toString() !== req.user.mongoId)
-        }) )  
-        
-        return res.json({data:contactList.contacts})
+        if(!contactList){
+            return res.status(404).json({message:"Contacts not found."})
         }
+        contactList.contacts.forEach((eachConversation) => {
+            eachConversation.participants.forEach((user) => {
+              if (!user.findByEmail) {
+                user.email = null;
+              }
+            });
+          
+            eachConversation.participants = eachConversation.participants.filter(
+              (user) => user._id.toString() !== req.user.mongoId
+            );
+          });
+          contactList.contacts.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        return res.json({data:contactList.contacts})
     } catch (error) {
+        console.log(error)
         return res.status(500).json({message:error.message})
     }
 })
