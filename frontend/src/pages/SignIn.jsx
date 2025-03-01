@@ -10,7 +10,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 export default function SignIn() {
   /*___________Hooks and states______________ */
-  const authorization = useSelector((store) => store.authorization);
+  const {token} = useSelector((store) => store.authorization);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -243,8 +243,8 @@ export default function SignIn() {
   };
   /*____________useEffects_____________ */
   useEffect(() => {
-    if (authorization.token) navigate("/");
-  }, []);
+    if (token) navigate("/");
+  }, [token,navigate]);
   return (
     <main className="min-w-full min-h-full lg:min-w-[30vw] lg:min-h-[30vh]  absolute left-2/4 top-2/4 -translate-x-2/4 -translate-y-2/4  bg-light rounded-lg overflow-hidden">
       <h1 className="max-h-[10vh] py-2  text-5xl text-center text-white bg-primary">
