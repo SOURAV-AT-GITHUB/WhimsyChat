@@ -20,7 +20,6 @@ export default function SignIn() {
     username: "",
     password: "",
     confirm_password: "",
-    // gender: "",
     first_name: "",
     last_name: "",
     findByEmail: true,
@@ -29,11 +28,11 @@ export default function SignIn() {
     verified: false,
   };
   const defaultValiditions = {
+    //if typeof any value is string then it's a error elseif typeof is object(null) means no error
     email: null,
     password: null,
     confirm_password: null,
     username: null,
-    // isUsernameAvailable:null,
   };
   const [formData, setFormData] = useState(defaultFormData);
   const [validation, setValidation] = useState(defaultValiditions);
@@ -254,9 +253,9 @@ export default function SignIn() {
       <div className="p-4 py-8 relative ">
         <form
           onSubmit={
-            formData.isChecked && formData.isRegistered
+            (formData.isChecked && formData.isRegistered)
               ? handleSignIn
-              : formData.isChecked && !formData.isRegistered
+              : (formData.isChecked && !formData.isRegistered)
               ? handleSignup
               : handleCheckMail
           }
@@ -269,6 +268,7 @@ export default function SignIn() {
               <input
                 type="email"
                 name="email"
+                maxLength={320}
                 placeholder=" "
                 value={formData.email}
                 onChange={(e) => {
@@ -354,6 +354,7 @@ export default function SignIn() {
                         placeholder=" "
                         required
                         minLength={8}
+                        maxLength={128}
                       />
                       <label htmlFor="password">Enter Password</label>
                     </div>
@@ -384,6 +385,7 @@ export default function SignIn() {
                         placeholder=" "
                         required
                         minLength={8}
+                        maxLength={128}
                       />
                       <label htmlFor="confirm_password">Confirm Password</label>
                     </div>
@@ -405,6 +407,7 @@ export default function SignIn() {
                           checkAllValidation("username", e.target.value)
                         }
                         minLength={2}
+                        maxLength={25}
                         type="text"
                         name="username"
                         placeholder=" "
@@ -463,6 +466,7 @@ export default function SignIn() {
                       placeholder=" "
                       required
                       minLength={2}
+                      maxLength={50}
                     />
                     <label htmlFor="first_name">First Name</label>
                   </div>
@@ -481,30 +485,10 @@ export default function SignIn() {
                       placeholder=" "
                       required
                       minLength={2}
+                      maxLength={50}
                     />
                     <label htmlFor="last_name">Last Name</label>
                   </div>
-                  {/*gender*/}
-                  {/* <div className="relative w-[85%]">
-                    <select
-                      value={formData.gender}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          gender: e.target.value,
-                        }))
-                      }
-                      className="w-full border-2"
-                      required
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Prefer not to say">
-                        Prefer not to say
-                      </option>
-                    </select>
-                  </div> */}
                   {/*findByEmail*/}
                   <div className="relative flex justify-between gap-6">
                     <p>Allow others to find you by email</p>
