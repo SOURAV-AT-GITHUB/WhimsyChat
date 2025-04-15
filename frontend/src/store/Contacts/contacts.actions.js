@@ -40,10 +40,13 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
         const newResult = []
         const existingResult =[]
         response.data.data.forEach(user=>{
-          for(let contact of existingContacts){
-            if(contact.participants[0]._id === user._id) existingResult.push(contact)
-            else newResult.push({isGroup:false,_id:null,isNew:true,participants:[user]})
-          }
+          const index = existingContacts.findIndex(contact=>contact.participants[0]._id === user._id)
+            if(index === -1) {
+              newResult.push({isGroup:false,_id:null,isNew:true,participants:[user]})
+            }
+            else{ 
+              existingResult.push(existingContacts[index])
+            }
         })
         dispatch({type:SEARCH_USERS_SUCCESS,payload:{newResult,existingResult}})
       } catch (error) {
