@@ -3,6 +3,8 @@ import {
   SOCKET_CONNECTION_SUCCESS,
   SOCKET_CONNECTION_ERROR,
   SOCKET_CONNECTION_DISCONNECTED,
+  ADD_ONE_MESSAGE,
+  UPDATE_ONE_MESSAGE,
 } from "../actionTypes";
 import { io } from "socket.io-client";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -19,7 +21,7 @@ export function connectSocket(token, dispatch) {
   });
   socketInstance.on("connect", () => {
     console.log("Websocket connection stablished");
-    dispatch({ type: SOCKET_CONNECTION_SUCCESS });
+    dispatch({ type: SOCKET_CONNECTION_SUCCESS, payload: socketInstance });
   });
   socketInstance.on("disconnect", () => {
     dispatch({ type: SOCKET_CONNECTION_DISCONNECTED });
@@ -35,14 +37,29 @@ export function connectSocket(token, dispatch) {
   });
 }
 
-export function setupSocketListeners(socket, dispatch) {
+export function setupSocketListeners(
+  socket,
+  dispatch,
+  currentOpenConversation
+) {
   if (!socket) return;
+  socket.off("receiveMessage")
+  socket.off("messageDeliveredAndSeen")
+  socket.off("messageDelivered")
+  socket.off("updateMessage")
+
   socket.on("receiveMessage", (message) => {
-    //continue from here
-    console.log(message);
+    message.status.isDelivered = new Date()
+    if (currentOpenConversation && message.conversationId === currentOpenConversation._id) {
+      message.status.isSeen = new Date()
+      socket.emit("messageDeliveredAndSeen", message);
+    }else{
+      socket.emit("messageDelivered",message)
+    }
+    message.status.isError = null
+    dispatch({ type: ADD_ONE_MESSAGE, payload: message });
   });
   socket.on("updateMessage", (message) => {
-    //continue from here
-    console.log(message);
+    dispatch({ type: UPDATE_ONE_MESSAGE, payload: message });
   });
 }
