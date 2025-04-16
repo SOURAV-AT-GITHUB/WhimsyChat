@@ -44,7 +44,7 @@ export function allMessagesReducer(
         messagesError: payload,
       });
     case ADD_ONE_MESSAGE: {
-      const messages = state.allMessages[payload.conversationId]||[];
+      const messages = state.allMessages[payload.conversationId] || [];
       messages.push(payload);
       return (state = {
         ...state,
@@ -54,11 +54,22 @@ export function allMessagesReducer(
         },
       });
     }
-    case UPDATE_ONE_MESSAGE:{
-      let chats = state.allMessages[payload.message.conversationId]
-      const result = chats.map(message=> message._id === payload.oldId ? payload.message : message)
-      state = {...state,allMessages:{...state.allMessages,[payload.message.conversationId]:result}}
-      return state
+    case UPDATE_ONE_MESSAGE: {
+      let chats = state.allMessages[payload.conversationId];
+      if (payload._id && !payload.tempId) {
+        const Id = chats.findIndex((message) => message._id === payload._id);
+        if (Id !== -1) chats[Id] = payload;
+      } else if (payload.tempId) {
+        const tempId = chats.findIndex(
+          (message) => payload.tempId === message.tempId
+        );
+        if (tempId !== -1) chats[tempId] = payload;
+      }
+      state = {
+        ...state,
+        allMessages: { ...state.allMessages, [payload.conversationId]: chats },
+      };
+      return state;
     }
     default:
       return state;
