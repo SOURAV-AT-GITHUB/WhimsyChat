@@ -6,16 +6,25 @@ import VerifyMail from "./pages/VerifyMail";
 import InvalidPath from "./pages/InvalidPath";
 import { Alert, Snackbar } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
-import {OPEN_SNACKBAR,CLOSE_SNACKBAR} from './store/actionTypes'
+import { OPEN_SNACKBAR, CLOSE_SNACKBAR } from "./store/actionTypes";
 import { useEffect } from "react";
+import { connectSocket } from "./store/Socket/socket.actions";
 function App() {
   const { open, severity, message } = useSelector((store) => store.snackbar);
-  const {first_name} = useSelector(store=>store.authorization)
-  const dispatch = useDispatch()
-  const closeSnackbar = ()=>dispatch({type:CLOSE_SNACKBAR})
-  useEffect(()=>{
-    if(first_name) dispatch({type:OPEN_SNACKBAR,payload:{message:`Welcomeback ${first_name}`,severity:"success"}})
-  },[])
+  const { first_name, token } = useSelector((store) => store.authorization);
+  const dispatch = useDispatch();
+  const closeSnackbar = () => dispatch({ type: CLOSE_SNACKBAR });
+  useEffect(() => {
+    if (first_name)
+      dispatch({
+        type: OPEN_SNACKBAR,
+        payload: { message: `Welcomeback ${first_name}`, severity: "success" },
+      });
+  }, [dispatch, first_name]);
+  useEffect(() => {
+    if (!token) return;
+    connectSocket(token, dispatch);
+  }, [token, dispatch]);
   return (
     <>
       <Routes>
@@ -24,8 +33,8 @@ function App() {
         <Route path="/verify-email/:token" element={<VerifyMail />} />
         <Route path="*" element={<InvalidPath />} />
       </Routes>
-      
-       <Snackbar
+
+      <Snackbar
         open={open}
         autoHideDuration={4000}
         onClose={closeSnackbar}
@@ -38,8 +47,7 @@ function App() {
         >
           {message}
         </Alert>
-      </Snackbar> 
-      
+      </Snackbar>
     </>
   );
 }

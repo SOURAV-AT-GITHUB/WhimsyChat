@@ -3,14 +3,7 @@ import DefaultAvatar from "/default-avatar.jpeg";
 import SearchIcon from "@mui/icons-material/Search";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SendIcon from "@mui/icons-material/Send";
-import {
-  forwardRef,
-  Fragment,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { forwardRef, Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EmojiPicker from "emoji-picker-react";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
@@ -37,14 +30,8 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 import Slide from "@mui/material/Slide";
 import WifiOffIcon from "@mui/icons-material/WifiOff";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import { SocketContext } from "../context/socketContext";
-import {
-  SOCKET_DISCONNECTED,
-  SOCKET_CONNECTING,
-  SOCKET_CONNECTED,
-  SOCKET_ERROR,
-} from "../constants/socketStatus";
-import RefreshIcon from '@mui/icons-material/Refresh';
+
+import RefreshIcon from "@mui/icons-material/Refresh";
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -62,8 +49,8 @@ export default function Home() {
   const { messagesLoading, allMessages, messagesError } = useSelector(
     (store) => store.allMessages
   );
-  const { socket, socketStatus } = useContext(SocketContext);
-  console.log(socketStatus);
+  const { isSocketConncted, isSocketError, socket, isSocketConnecting } =
+    useSelector((store) => store.socket);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [currentOpenConversation, setCurrentOpenConversation] = useState(null);
@@ -113,6 +100,7 @@ export default function Home() {
   /*_________dispatch functions */
   function handlesearchUsers(event) {
     event.preventDefault();
+    if (!socket) return alert("You are offline!");
     dispatch(searchUsers(token, event.target[0].value, contacts));
     event.target[0].value = "";
   }
@@ -163,17 +151,18 @@ export default function Home() {
     const messageAfter_idRemove = { ...currentMessage };
     delete messageAfter_idRemove._id;
     try {
-      const response = await axios.post(
-        `${BACKEND_URL}/messages`,
-        messageAfter_idRemove,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      dispatch({
-        type: UPDATE_ONE_MESSAGE,
-        payload: { message: response.data.data, oldId: currentMessage._id },
-      });
+      // const response = await axios.post(
+      //   `${BACKEND_URL}/messages`,
+      //   messageAfter_idRemove,
+      //   {
+      //     headers: { Authorization: `Bearer ${token}` },
+      //   }
+      // );
+      socket.emit("messageRequest", messageAfter_idRemove);
+      // dispatch({
+      //   type: UPDATE_ONE_MESSAGE,
+      //   payload: { message: response.data.data, oldId: currentMessage._id },
+      // });
       messageQueue.current.shift();
     } catch (error) {
       console.log(error);
@@ -616,7 +605,7 @@ export default function Home() {
             contactsError ||
             messagesLoading ||
             messagesError ||
-            socketStatus !== SOCKET_CONNECTED
+            !isSocketConncted
         )}
         fullScreen
         sx={{
@@ -630,23 +619,30 @@ export default function Home() {
       >
         <div className="w-full h-full flex flex-col items-center justify-center gap-4 transparent-blur-background ">
           <h1 className="text-7xl font-semibold text-teal-500">Whimsy Chat</h1>
-          {contactsError || messagesError || socketStatus === SOCKET_ERROR ? (
+          {contactsError || messagesError || isSocketError ? (
             <div className="flex items-center justify-center gap-4 text-white">
               {contactsError === "Network Error" ||
               messagesError === "Network Error" ||
-              socketStatus !== SOCKET_ERROR ? (
+              isSocketError ? (
                 <div className="flex flex-col items-center gap-2">
                   <div className="flex items-center gap-2">
-
-                  <p className="text-4xl">You are offline</p>
-                  <WifiOffIcon sx={{ height: "75px", width: "75px" }} />
+                    <p className="text-4xl">You are offline</p>
+                    <WifiOffIcon sx={{ height: "75px", width: "75px" }} />
                   </div>
-                  <button className="flex items-center gap-2 text-4xl bg-primary p-1 px-2 rounded-lg" onClick={()=>location.reload()}><p>Refresh</p>  <RefreshIcon sx={{ height: "50px", width: "50px" }} /></button>
+                  <button
+                    className="flex items-center gap-2 text-4xl bg-primary p-1 px-2 rounded-lg"
+                    onClick={() => location.reload()}
+                  >
+                    <p>Refresh</p>{" "}
+                    <RefreshIcon sx={{ height: "50px", width: "50px" }} />
+                  </button>
                 </div>
               ) : (
                 <Fragment>
                   <p className="text-4xl">
-                    {contactsError || messagesError || (SOCKET_ERROR && "Unable to connect to server.")}
+                    {contactsError ||
+                      messagesError ||
+                      (isSocketError && "Unable to connect to server.")}
                   </p>
                   <ErrorOutlineIcon sx={{ height: "75px", width: "75px" }} />
                 </Fragment>
