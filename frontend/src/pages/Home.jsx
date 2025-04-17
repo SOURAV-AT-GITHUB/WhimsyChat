@@ -217,12 +217,34 @@ export default function Home() {
       sendNextMessage();
     }
   }
+  function checkAndUpdateMessageDeliveredStatus() {
+    if (!socket) return;
+    const undeliveredMessages = Object.entries(allMessages)
+      .map(([id, messages]) =>
+        messages.filter(
+          (message) =>
+            message.sender !== mongoId && message.status.isDelivered === null
+        )
+      )
+      .flat();
+
+    if (undeliveredMessages.length > 0) {
+      undeliveredMessages.forEach((message) => {
+        message.status.isDelivered = new Date();
+        socket.emit("messageDelivered", message);
+        dispatch({ type: UPDATE_ONE_MESSAGE, payload: message });
+      });
+    }
+  }
+
   /*__________useEffects_________ */
   useEffect(() => {
     //set up socket listeners
     if (!socket) return;
     setupSocketListeners(socket, dispatch, currentOpenConversation);
   }, [socket, dispatch, currentOpenConversation]);
+  useEffect(checkAndUpdateMessageDeliveredStatus, [socket, allMessages]);
+
   useEffect(() => {
     //fetch contacts or navigate to signin
     if (!token) {
