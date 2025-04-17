@@ -32,6 +32,7 @@ import WifiOffIcon from "@mui/icons-material/WifiOff";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 
 import RefreshIcon from "@mui/icons-material/Refresh";
+import { setupSocketListeners } from "../store/Socket/socket.actions";
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -96,7 +97,13 @@ export default function Home() {
   function closecreateContactConfirmationDialog() {
     setcreateContactConfirmationModal(false);
   }
-
+  function countUnreads(messages = []) {
+    let count = 0;
+    messages.forEach((message) => {
+      if (message.sender !== mongoId && message.status.isSeen === null) count++;
+    });
+    return count;
+  }
   /*_________dispatch functions */
   function handlesearchUsers(event) {
     event.preventDefault();
@@ -133,7 +140,7 @@ export default function Home() {
       if (!isSending) createContactAndSendMessage();
       return;
     }
-    newMessage._id = Date.now();
+    newMessage.tempId = Date.now();
     messageQueue.current.push(newMessage);
     dispatch({
       type: ADD_ONE_MESSAGE,
@@ -148,8 +155,7 @@ export default function Home() {
 
     setIsSending(true);
     const currentMessage = messageQueue.current[0];
-    const messageAfter_idRemove = { ...currentMessage };
-    delete messageAfter_idRemove._id;
+
     try {
       // const response = await axios.post(
       //   `${BACKEND_URL}/messages`,
@@ -158,20 +164,21 @@ export default function Home() {
       //     headers: { Authorization: `Bearer ${token}` },
       //   }
       // );
-      socket.emit("messageRequest", messageAfter_idRemove);
+      socket.emit("messageRequest", currentMessage);
       // dispatch({
       //   type: UPDATE_ONE_MESSAGE,
       //   payload: { message: response.data.data, oldId: currentMessage._id },
       // });
-      messageQueue.current.shift();
+      // messageQueue.current.shift();
     } catch (error) {
       console.log(error);
       dispatch(
         openSnackbar(error.response?.data.message || error.message, "error")
       );
       dispatch({ type: ADD_ONE_MESSAGE, payload: currentMessage });
-      messageQueue.current.shift();
+      // messageQueue.current.shift();
     } finally {
+      messageQueue.current.shift();
       setIsSending(false);
 
       if (createContactQueue.current.length > 0) createContactAndSendMessage();
@@ -199,11 +206,10 @@ export default function Home() {
       });
       dispatch(resetSearch());
       setcreateContactConfirmationModal(false);
-      console.log(response.data.data.newConversation);
+
       setCurrentOpenConversation(response.data.data.newConversation);
       openSnackbar(response.data.message || "Success", "success");
     } catch (error) {
-      console.log(error);
       openSnackbar(error.response?.data.message || error.message, "error");
     } finally {
       createContactQueue.current.shift();
@@ -212,6 +218,11 @@ export default function Home() {
     }
   }
   /*__________useEffects_________ */
+  useEffect(() => {
+    //set up socket listeners
+    if (!socket) return;
+    setupSocketListeners(socket, dispatch, currentOpenConversation);
+  }, [socket, dispatch, currentOpenConversation]);
   useEffect(() => {
     //fetch contacts or navigate to signin
     if (!token) {
@@ -224,7 +235,6 @@ export default function Home() {
     //fetch messages
     function getMessage() {
       if (!contacts[0]) return;
-      console.log("messages fetched");
       contacts.forEach((contact) =>
         dispatch(getAllMessages(token, contact._id))
       );
@@ -357,6 +367,7 @@ export default function Home() {
                       }
                       mongoId={mongoId}
                       stateUpdaterFunction={setCurrentOpenConversation}
+                      unreads={countUnreads(allMessages[conversation._id])}
                     />
                   )
               )}
@@ -530,9 +541,12 @@ export default function Home() {
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <h2 className="text-6xl text-teal-400">Whimsy Chat</h2>
+                <h2 className="text-6xl text-teal-400 select-none">
+                  Whimsy Chat
+                </h2>
                 <p className="text-teal-500 text-2xl mt-2 ">
-                  Contact - whimsychatofficial@gmail.com
+                  <span className="select-none">Contact - </span>
+                  whimsychatofficial@gmail.com
                 </p>
               </div>
             </div>
