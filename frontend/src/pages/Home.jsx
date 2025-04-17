@@ -236,7 +236,19 @@ export default function Home() {
       });
     }
   }
-
+  function checkAndUpdateMessageSeenStatus() {
+    if (!socket || !currentOpenConversation) return;
+    const unSeenMessages = allMessages[currentOpenConversation._id].filter(
+      (message) => message.sender !== mongoId && message.status.isSeen === null
+    );
+    if (unSeenMessages.length > 0) {
+      unSeenMessages.forEach((message) => {
+        message.status.isSeen = new Date();
+        socket.emit("messageSeen", message);
+        dispatch({ type: UPDATE_ONE_MESSAGE, payload: message });
+      });
+    }
+  }
   /*__________useEffects_________ */
   useEffect(() => {
     //set up socket listeners
@@ -244,7 +256,7 @@ export default function Home() {
     setupSocketListeners(socket, dispatch, currentOpenConversation);
   }, [socket, dispatch, currentOpenConversation]);
   useEffect(checkAndUpdateMessageDeliveredStatus, [socket, allMessages]);
-
+  useEffect(checkAndUpdateMessageSeenStatus, [socket, currentOpenConversation]);
   useEffect(() => {
     //fetch contacts or navigate to signin
     if (!token) {
