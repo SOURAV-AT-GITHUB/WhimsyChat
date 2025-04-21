@@ -47,24 +47,24 @@ export default function UserContactCard({
       onClick={() => stateUpdaterFunction(conversation)}
       className="flex gap-4 p-1 border-b cursor-pointer bg-white rounded-lg"
     >
-      <div className="max-h-[60px]  w-[20%] rounded-full overflow-hidden ">
+      <div className="min-h-[80px] min-w-[80px] max-h-[80px] max-w-[80px] lg:min-h-[65px] lg:min-w-[65px] lg:max-h-[65px] lg:max-w-[65px] rounded-full overflow-hidden ">
         <img
           src={conversation.participants[0].image || DefaultAvatar}
           alt={"conversation.participants[0].username"}
-          className="h-full w-full"
+          className="h-full w-full object-cover object-center"
         />
       </div>
 
-      <div className="w-[80%] flex flex-col gap-1">
+      <div className="w-full flex flex-col gap-1">
         <div className="flex justify-between items-center">
-          <p>
+          <p className="line-clamp-1 text-lg lg:text-base">
             {conversation.participants[0].first_name}{" "}
             {conversation.participants[0].last_name}
           </p>
           {conversation.updatedAt && (
-            <p className="text-xs text-slate-500">
+            <p className="text-sm lg:text-[10px] text-slate-500">
               {" "}
-              {formatTime(lastMessage?.updatedAt || conversation.updatedAt)}
+              {formatTime(lastMessage?.createdAt || conversation.updatedAt)}
             </p>
           )}
         </div>
@@ -83,35 +83,31 @@ export default function UserContactCard({
                       {lastMessage.status.isSeen ||
                       lastMessage.status.isDelivered ? (
                         <DoneAllIcon
-                          sx={{ fontSize: "1.25rem" }}
                           className={`${
                             lastMessage.status.isSeen
                               ? "text-orange-400"
                               : "text-slate-300"
-                          }`}
+                          } !text-3xl lg:!text-xl`}
                         />
                       ) : lastMessage.status.isSent ? (
                         <DoneIcon
-                          sx={{ fontSize: "1.25rem" }}
-                          className="text-slate-300"
+                          className="text-slate-300 !text-3xl lg:!text-xl"
                         />
                       ) : lastMessage.status.isError ? (
                         <ErrorIcon
-                          sx={{ fontSize: "1.25rem" }}
-                          className="text-red-500 bg-white rounded-full "
+                          className="text-red-500 bg-white rounded-full !text-3xl lg:!text-xl"
                         />
                       ) : (
                         <ScheduleIcon
-                          sx={{ fontSize: "1.25rem" }}
-                          className="text-slate-300"
+                          className="text-slate-300 !text-3xl lg:!text-xl"
                         />
                       )}
                     </Fragment>
                   )}
-                  <p className="line-clamp-1 text-sm">{lastMessage.value}</p>
+                  <p className="line-clamp-1 text-lg lg:text-sm">{lastMessage.value}</p>
                 </div>
               )}
-              {unreads>0 && <p className="bg-teal-500 px-1.5 text-sm text-white rounded-full">{unreads}</p>}
+              {unreads>0 && <p className="bg-secondary px-1.5 text-sm text-white rounded-full">{unreads}</p>}
             </div>
           )}
         </div>
