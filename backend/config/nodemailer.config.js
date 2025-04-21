@@ -32,7 +32,7 @@ const sendVerificationMail = async (mail, token) => {
     const response = await transporter.sendMail(mailOptions);
     return response
   } catch (error) {
-    throw new Error ()
+    throw new Error (error)
   }
 };
 
