@@ -13,7 +13,8 @@ export default {
         dark:"navy"
       },
       colors:{
-        primary:"#3B82F6"
+        primary:"#3B82F6",
+        secondary:"#00bba8"
       },
     },
   },
