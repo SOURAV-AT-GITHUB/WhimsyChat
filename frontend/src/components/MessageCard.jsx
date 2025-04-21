@@ -20,7 +20,7 @@ export default function MessageCard({ message, mongoId }) {
     <div
       className={`h-fit w-fit max-w-[90%] sm:max-w-[70%] p-1 pt-2 flex flex-col ${
         mongoId == message.sender
-          ? "self-end bg-teal-500 text-white"
+          ? "self-end bg-secondary text-white"
           : "border-2 bg-white"
       }  rounded-lg shadow-xl`}
     >
