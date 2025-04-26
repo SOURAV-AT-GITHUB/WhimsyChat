@@ -23,16 +23,22 @@ import {
   ADD_NEW_CONTACT,
 } from "../store/actionTypes";
 import MessageCard from "../components/MessageCard";
-import { CircularProgress, DialogActions, DialogTitle } from "@mui/material";
+import {
+  CircularProgress,
+  DialogActions,
+  DialogTitle,
+  useMediaQuery,
+} from "@mui/material";
 import { getAllMessages } from "../store/Messages/messages.action";
 import Dialog from "@mui/material/Dialog";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 import Slide from "@mui/material/Slide";
 import WifiOffIcon from "@mui/icons-material/WifiOff";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { setupSocketListeners } from "../store/Socket/socket.actions";
+import Drawer from "@mui/material/Drawer";
+import WestIcon from "@mui/icons-material/West";
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -66,7 +72,7 @@ export default function Home() {
     useState(false);
   const createContactQueue = useRef([]);
   const [isContactCreating, setIsContactCreating] = useState(false);
-
+  const maxScreenWidth1024 = useMediaQuery("(max-width:1024px)");
   /*_________Pure functions_____________*/
 
   function toggleOptionMenu() {
@@ -84,11 +90,15 @@ export default function Home() {
   function addEmoji(emoji) {
     setMessage((prev) => (prev += emoji));
   }
-  function closeConversationonEsc(event) {
+  function closeConversationEsc(event) {
     if (isSending) return;
     if (event.key === "Escape") {
       setCurrentOpenConversation(null);
     }
+  }
+  function closeConversation() {
+    if (isSending) return;
+    setCurrentOpenConversation(null);
   }
   function opencreateContactConfirmationDialog(event) {
     event.preventDefault();
@@ -238,10 +248,10 @@ export default function Home() {
   }
   function checkAndUpdateMessageSeenStatus() {
     if (!socket || !currentOpenConversation) return;
-    const unSeenMessages = allMessages[currentOpenConversation._id].filter(
+    const unSeenMessages = allMessages[currentOpenConversation._id]?.filter(
       (message) => message.sender !== mongoId && message.status.isSeen === null
     );
-    if (unSeenMessages.length > 0) {
+    if (unSeenMessages?.length > 0) {
       unSeenMessages.forEach((message) => {
         message.status.isSeen = new Date();
         socket.emit("messageSeen", message);
@@ -253,8 +263,8 @@ export default function Home() {
   useEffect(() => {
     //set up socket listeners
     if (!socket) return;
-    setupSocketListeners(socket, dispatch, currentOpenConversation);
-  }, [socket, dispatch, currentOpenConversation]);
+    setupSocketListeners(socket, dispatch, currentOpenConversation,contacts,setCurrentOpenConversation);
+  }, [socket, dispatch, currentOpenConversation,contacts]);
   useEffect(checkAndUpdateMessageDeliveredStatus, [socket, allMessages]);
   useEffect(checkAndUpdateMessageSeenStatus, [socket, currentOpenConversation]);
   useEffect(() => {
@@ -276,10 +286,13 @@ export default function Home() {
     [contactsLoading]
   );
   useEffect(() => {
+    if (Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
     //close conversation on Esc
-    window.addEventListener("keydown", closeConversationonEsc);
+    window.addEventListener("keydown", closeConversationEsc);
     return () => {
-      window.removeEventListener("keydown", closeConversationonEsc);
+      window.removeEventListener("keydown", closeConversationEsc);
     };
   }, []);
   useEffect(
@@ -296,16 +309,16 @@ export default function Home() {
   return (
     <main
       id="main-container"
-      className="relative max-w-screen-xl m-auto   bg-opacity-20  rounded-t-xl overflow-hidden "
+      className="relative w-full  max-w-screen-xl m-auto  bg-opacity-20  rounded-t-xl overflow-hidden "
     >
-      <h1 className="max-h-[10vh] font-medium font-serif tracking-wider py-2 pb-4 select-none text-5xl text-center text-white bg-cyan-500 bg-opacity-35">
+      <h1 className="hidden lg:flex items-center justify-center h-[10vh] xl:h-[10vh] font-medium font-serif tracking-wider py-2 pb-4 select-none text-5xl text-center text-white bg-cyan-500 bg-opacity-35">
         Whimsy Chat
       </h1>
 
-      <div className="flex  h-[80vh] ">
+      <div className="flex  h-[100vh] lg:h-[85vh]">
         <section
           id="home-left"
-          className="w-1/4 relative  overflow-y-auto thin-scrollbar transparent-blur-background  flex flex-col gap-2 border-2"
+          className="hidden w-1/4 relative  overflow-y-auto thin-scrollbar transparent-blur-background  lg:flex flex-col gap-2 border-2"
         >
           <form
             onSubmit={handlesearchUsers}
@@ -415,21 +428,27 @@ export default function Home() {
           )}
         </section>
 
-        <section id="home-right" className="w-3/4 transparent-blur-background ">
+        <section
+          id="home-right"
+          className="w-full lg:w-3/4 transparent-blur-background flex flex-col justify-between"
+        >
           {currentOpenConversation ? (
             <Fragment>
-              <div className="flex justify-between items-center h-[10%]  border-2 p-2 bg-white">
+              <div className="flex justify-between items-center h-[8%] lg:h-[10%]  border-2 p-2 bg-white">
                 <div className="flex gap-2 items-center">
-                  <img
-                    src={
-                      currentOpenConversation.participants[0].image ||
-                      DefaultAvatar
-                    }
-                    alt={currentOpenConversation.participants[0].username}
-                    className="max-h-[50px] rounded-full"
-                  />
+                  <div className="flex items-center gap-2">
+                    <button className="lg:hidden" onClick={closeConversation}><WestIcon /></button>
+                    <img
+                      src={
+                        currentOpenConversation.participants[0].image ||
+                        DefaultAvatar
+                      }
+                      alt={currentOpenConversation.participants[0].username}
+                      className="max-h-[50px] rounded-full"
+                    />
+                  </div>
                   <div>
-                    <p>
+                    <p className="text-lg lg:text-base">
                       {currentOpenConversation.participants[0].first_name}{" "}
                       {currentOpenConversation.participants[0].last_name}
                     </p>
@@ -513,7 +532,7 @@ export default function Home() {
                     ? sendMessage
                     : opencreateContactConfirmationDialog
                 }
-                className="h-[10%] w-full relative  bg-white flex items-center justify-between px-4 gap-4"
+                className="h-[8%] lg:h-[10%] w-full relative  bg-white flex items-center justify-between px-4 gap-4"
               >
                 <input
                   type="text"
@@ -535,36 +554,33 @@ export default function Home() {
                   </p>
                 )}
                 <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    className="relative "
+                  <div
+                    className="relative cursor-pointer"
                     onClick={toggleEmojiMenu}
                   >
                     <EmojiEmotionsIcon
                       fontSize="large"
-                      className="text-white bg-teal-500 rounded-full"
+                      className="text-white bg-secondary rounded-full"
                     />
-                    {openEmojis && currentOpenConversation && (
-                      <div className="absolute bottom-0 right-16  ">
+                      <div className={`w-screen sm:w-auto absolute bottom-16 -right-16 sm:right-16 ${(openEmojis && currentOpenConversation) ? "block" : "hidden"}`}>
                         <EmojiPicker
                           // open={openEmojis}
-                          onEmojiClick={(e) => addEmoji(e.emoji)}
+                          onEmojiClick={(e) =>{ addEmoji(e.emoji)}}
                           allowExpandReactions={true}
                           height={"400px"}
-                          width={"300px"}
-                          className="absolute"
+                          width={"100%"}
                           emojiStyle="twitter"
+                          
                         />
                       </div>
-                    )}
-                  </button>
+                  </div>
 
                   {
                     <button
                       type="submit"
                       className={`${
                         message.trim() ? "scale-100" : "scale-0"
-                      } transition-transform duration-200 ease-in-out bg-teal-500 p-2 pl-3 shadow-2xl  rounded-full flex items-center justify-center`}
+                      } transition-transform duration-200 ease-in-out bg-secondary p-2 pl-3 shadow-2xl  rounded-full flex items-center justify-center`}
                     >
                       <SendIcon className="text-white" />
                     </button>
@@ -578,7 +594,7 @@ export default function Home() {
                 <h2 className="text-6xl text-teal-400 select-none">
                   Whimsy Chat
                 </h2>
-                <p className="text-teal-500 text-2xl mt-2 ">
+                <p className="text-secondary text-2xl mt-2 ">
                   <span className="select-none">Contact - </span>
                   whimsychatofficial@gmail.com
                 </p>
@@ -655,6 +671,7 @@ export default function Home() {
             messagesError ||
             !isSocketConncted
         )}
+
         fullScreen
         sx={{
           "& .css-10d30g3-MuiPaper-root-MuiDialog-paper": {
@@ -666,7 +683,7 @@ export default function Home() {
         }}
       >
         <div className="w-full h-full flex flex-col items-center justify-center gap-4 transparent-blur-background ">
-          <h1 className="text-7xl font-semibold text-teal-500">Whimsy Chat</h1>
+          <h1 className="text-5xl sm:text-7xl font-semibold text-secondary text-center">Whimsy Chat</h1>
           {contactsError || messagesError || isSocketError ? (
             <div className="flex items-center justify-center gap-4 text-white">
               {contactsError === "Network Error" ||
@@ -674,11 +691,11 @@ export default function Home() {
               isSocketError ? (
                 <div className="flex flex-col items-center gap-2">
                   <div className="flex items-center gap-2">
-                    <p className="text-4xl">You are offline</p>
+                    <p className="text-2xl sm:text-4xl">You are offline</p>
                     <WifiOffIcon sx={{ height: "75px", width: "75px" }} />
                   </div>
                   <button
-                    className="flex items-center gap-2 text-4xl bg-primary p-1 px-2 rounded-lg"
+                    className="flex items-center gap-2 text-3xl sm:text-4xl bg-primary p-1 px-2 rounded-lg"
                     onClick={() => location.reload()}
                   >
                     <p>Refresh</p>{" "}
@@ -698,12 +715,136 @@ export default function Home() {
             </div>
           ) : (
             <div className="flex items-center justify-center gap-4 text-white">
-              <p className="text-5xl">Loading...</p>
-              <CircularProgress size="4rem" sx={{ color: "white" }} />
+              <p className="text-4xl sm:text-5xl">Loading...</p>
+              <CircularProgress className="!size-12 sm:!size-20" sx={{ color: "white" }} />
             </div>
           )}
         </div>
       </Dialog>
+      
+      {/*Drawer for screen below 1024px */}
+      <Drawer
+        className="transparent-blur-background"
+        open={Boolean(maxScreenWidth1024 && !currentOpenConversation)}
+      >
+        <div
+          id="side-drawer"
+          className="relative h-full w-screen sm:min-w-[640px] sm:w-[75vw] min-w-[320px] max-w-screen-sm "
+        >
+          <div className="transparent-blur-background w-full h-full">
+            <h1 className="font-medium font-serif tracking-wider py-2 pb-4 select-none text-5xl text-center text-white bg-primary">
+              Whimsy Chat
+            </h1>
+            <div className="relative  overflow-y-auto thin-scrollbar transparent-blur-background flex flex-col gap-2"></div>
+            <form
+              onSubmit={handlesearchUsers}
+              className="relative flex items-center justify-between   border border-t-0 bg-white pr-3 m-2 rounded-full overflow-hidden"
+            >
+              <input
+                type="text"
+                placeholder="Search using username or email"
+                required
+                minLength={2}
+                className="w-10/12 p-4  focus:outline-none placeholder:text-slate-600"
+              />
+              <button type="submit">
+                <SearchIcon />
+              </button>
+            </form>
+            {isSearching ||
+            searchResult.existingResult[0] ||
+            searchResult.newResult[0] ||
+            isSearchError ? (
+              <div className="w-full overflow-y-auto thin-scrollbar">
+                <button
+                  onClick={() => dispatch(resetSearch())}
+                  type="button"
+                  className="mb-2 bg-primary text-white rounded-lg py-1 w-full flex items-center justify-center gap-2"
+                >
+                  <p>Close Search </p>
+                  <CloseIcon />
+                </button>
+                {isSearching ? (
+                  <div className="flex flex-col gap-1">
+                    <SearchUserSkeleton />
+                    <SearchUserSkeleton />
+                  </div>
+                ) : searchResult.existingResult[0] ||
+                  searchResult.newResult[0] ? (
+                  <div className="flex flex-col gap-1 px-1">
+                    {searchResult.existingResult[0] && (
+                      <div className="flex flex-col gap-1">
+                        <p className="bg-white p-1 rounded-md text-center text-primary text-sm">
+                          Esixting contacts
+                        </p>
+                        {searchResult.existingResult.map((conversation) => (
+                          <UserContactCard
+                            key={conversation._id}
+                            conversation={conversation}
+                            lastMessage={
+                              allMessages[conversation._id]?.[
+                                allMessages[conversation._id].length - 1
+                              ]
+                            }
+                            mongoId={mongoId}
+                            stateUpdaterFunction={setCurrentOpenConversation}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {searchResult.newResult[0] && (
+                      <div className="flex flex-col gap-1">
+                        <p className="bg-white p-1 rounded-md text-center text-primary text-sm">
+                          Not in contacts
+                        </p>
+                        {searchResult.newResult.map((conversation) => (
+                          <UserContactCard
+                            key={conversation.participants[0]._id}
+                            conversation={conversation}
+                            stateUpdaterFunction={setCurrentOpenConversation}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  isSearchError && (
+                    <p className="bg-white text-red-400 text-center p-2 text-lg rounded-md">
+                      {isSearchError}
+                    </p>
+                  )
+                )}
+              </div>
+            ) : contacts[0] ? (
+              <div className="flex flex-col gap-2 px-1">
+                {contacts.map(
+                  (conversation) =>
+                    !conversation.isGroup && (
+                      <UserContactCard
+                        key={conversation._id}
+                        conversation={conversation}
+                        lastMessage={
+                          allMessages[conversation._id]?.[
+                            allMessages[conversation._id].length - 1
+                          ]
+                        }
+                        mongoId={mongoId}
+                        stateUpdaterFunction={setCurrentOpenConversation}
+                        unreads={countUnreads(allMessages[conversation._id])}
+                      />
+                    )
+                )}
+              </div>
+            ) : (
+              <div className="text-center p-2">
+                <p className="text-2xl">
+                  👆🏻 Search and message users to add them{" "}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </Drawer>
     </main>
   );
 }
