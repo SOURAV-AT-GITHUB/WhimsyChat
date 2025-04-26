@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
-
+const MessageModel = require("../models/message.model");
 const connectedUsers = new Map();
 
 module.exports = function setupSocket(server) {
@@ -36,32 +36,55 @@ module.exports = function setupSocket(server) {
       connectedUsers.delete(mongoId);
       console.log(`${username} disconnected`);
     });
-    socket.on("messageRequest", (message) => {
-        message._id = Date.now()
+    socket.on("messageRequest", async (message) => {
       message.status.isSent = new Date();
-      const receiverOnline = connectedUsers.get(message.receiver);
-      if (receiverOnline) {
-        socket.to(receiverOnline).emit("receiveMessage", message);
+      const tempId = message.tempId;
+      try {
+        const newMessage = await new MessageModel(message).save();
+        const receiverOnline = connectedUsers.get(message.receiver);
+        if (receiverOnline) {
+          socket.to(receiverOnline).emit("receiveMessage", newMessage);
+        }
+        socket.emit("updateMessage", { ...newMessage._doc, tempId });
+      } catch (error) {
+        socket.emit("messageError", error.message);
       }
-      socket.emit("updateMessage",message);
     });
-    socket.on("messageDeliveredAndSeen", (message) => {
-      if (message.tempId) delete message.tempId;
-      const senderOnline = connectedUsers.get(message.sender);
-      if (senderOnline) socket.to(senderOnline).emit("updateMessage", message);
+    socket.on("messageDeliveredAndSeen", async (message) => {
+      if (message?.tempId) delete message.tempId;
       //update the message on database
+      try {
+        await MessageModel.findByIdAndUpdate(message._id, message);
+        const senderOnline = connectedUsers.get(message.sender);
+        if (senderOnline)
+          socket.to(senderOnline).emit("updateMessage", message);
+      } catch (error) {
+        socket.emit("messageError", error.message);
+      }
     });
-    socket.on("messageDelivered", (message) => {
-      if (message.tempId) delete message.tempId;
-      const senderOnline = connectedUsers.get(message.sender);
-      if (senderOnline) socket.to(senderOnline).emit("updateMessage", message);
+    socket.on("messageDelivered", async (message) => {
+      if (message?.tempId) delete message.tempId;
       //update the message on database
+      try {
+        await MessageModel.findByIdAndUpdate(message._id, message);
+        const senderOnline = connectedUsers.get(message.sender);
+        if (senderOnline)
+          socket.to(senderOnline).emit("updateMessage", message);
+      } catch (error) {
+        socket.emit("messageError", error.message);
+      }
     });
-    socket.on("messageSeen", (message) => {
-      if (message.tempId) delete message.tempId;
-      const senderOnline = connectedUsers.get(message.sender);
-      if (senderOnline) socket.to(senderOnline).emit("updateMessage", message);
+    socket.on("messageSeen", async (message) => {
+      if (message?.tempId) delete message.tempId;
       //update the message on database
+      try {
+        await MessageModel.findByIdAndUpdate(message._id, message);
+        const senderOnline = connectedUsers.get(message.sender);
+        if (senderOnline)
+          socket.to(senderOnline).emit("updateMessage", message);
+      } catch (error) {
+        socket.emit("messageError", error.message);
+      }
     });
   });
 
