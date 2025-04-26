@@ -5,6 +5,7 @@ import {
   SOCKET_CONNECTION_DISCONNECTED,
   ADD_ONE_MESSAGE,
   UPDATE_ONE_MESSAGE,
+  OPEN_SNACKBAR,
 } from "../actionTypes";
 import { io } from "socket.io-client";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -36,30 +37,77 @@ export function connectSocket(token, dispatch) {
     dispatch({ type: SOCKET_CONNECTION_ERROR, payload: err.message });
   });
 }
-
+let currentNotification = null;
+const sendNotification = (
+  sender,
+  body,
+  icon,
+  conversation,
+  setCurrentOpenConversation
+) => {
+  if (Notification.permission === "granted") {
+    if (currentNotification) {
+      currentNotification.close();
+    }
+    currentNotification = new Notification(sender, {
+      icon, // small icon next to title
+      body,
+      badge: "/favicon.jpg", // optional small badge (Android)
+      vibrate: [200, 100, 200], // optional vibration pattern
+    });
+    currentNotification.onclick = () => {
+      setCurrentOpenConversation(conversation);
+      currentNotification.close()
+    };
+    currentNotification.onclose = () => {
+      currentNotification = null;
+    }
+  }
+};
 export function setupSocketListeners(
   socket,
   dispatch,
-  currentOpenConversation
+  currentOpenConversation,
+  contacts,
+  setCurrentOpenConversation
 ) {
   if (!socket) return;
-  socket.off("receiveMessage")
-  socket.off("messageDeliveredAndSeen")
-  socket.off("messageDelivered")
-  socket.off("updateMessage")
+  socket.off("receiveMessage");
+  socket.off("messageDeliveredAndSeen");
+  socket.off("messageDelivered");
+  socket.off("updateMessage");
+  socket.off("messageError");
 
-  socket.on("receiveMessage", (message) => {
-    message.status.isDelivered = new Date()
-    if (currentOpenConversation && message.conversationId === currentOpenConversation._id) {
-      message.status.isSeen = new Date()
-      socket.emit("messageDeliveredAndSeen", message);
-    }else{
-      socket.emit("messageDelivered",message)
+  socket.on("receiveMessage", (newMessage) => {
+    newMessage.status.isDelivered = new Date();
+    if (
+      currentOpenConversation &&
+      newMessage.conversationId === currentOpenConversation._id
+    ) {
+      newMessage.status.isSeen = new Date();
+      socket.emit("messageDeliveredAndSeen", newMessage);
+    } else {
+      // console.log(newMessage.conversationId)
+      const conversation = contacts.filter(
+        (contact) => contact._id === newMessage.conversationId
+      )[0];
+      const sender = conversation.participants[0];
+      socket.emit("messageDelivered", newMessage);
+      sendNotification(
+        `${sender.first_name} ${sender.last_name}`,
+        newMessage.value,
+        sender.image,
+        conversation,
+        setCurrentOpenConversation
+      );
     }
-    message.status.isError = null
-    dispatch({ type: ADD_ONE_MESSAGE, payload: message });
+    newMessage.status.isError = null;
+    dispatch({ type: ADD_ONE_MESSAGE, payload: newMessage });
   });
   socket.on("updateMessage", (message) => {
     dispatch({ type: UPDATE_ONE_MESSAGE, payload: message });
+  });
+  socket.on("messageError", (message) => {
+    dispatch({ type: OPEN_SNACKBAR, payload: { message, severity: "error" } });
   });
 }
