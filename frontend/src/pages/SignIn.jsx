@@ -246,8 +246,8 @@ export default function SignIn() {
     if (token) navigate("/");
   }, [token,navigate]);
   return (
-    <main className="min-w-full min-h-full lg:min-w-[30vw] lg:min-h-[30vh]  absolute left-2/4 top-2/4 -translate-x-2/4 -translate-y-2/4  bg-light rounded-lg overflow-hidden">
-      <h1 className="max-h-[10vh] py-2  text-5xl text-center text-white bg-primary">
+    <main className="w-full max-w-[90%] sm:max-w-lg  absolute left-2/4 top-2/4 -translate-x-2/4 -translate-y-2/4 shadow-2xl transparent-blur-background rounded-lg overflow-hidden">
+      <h1 className="max-h-[10vh] py-2 text-4xl sm:text-5xl text-center text-white bg-primary">
         Whimsy Chat
       </h1>
       <div className="p-4 py-8 relative ">
@@ -263,7 +263,7 @@ export default function SignIn() {
           className="flex flex-col items-center justify-center  gap-4 "
         >
           {/*email */}
-          <div className="error-wrapper w-[85%]">
+          <div className="error-wrapper w-[90%]">
             <div className="relative flex gap-2">
               <input
                 type="email"
@@ -277,7 +277,7 @@ export default function SignIn() {
                     email: e.target.value.toLocaleLowerCase(),
                   }));
                   //only if a error is present
-                  if (typeof validation.email === "string")
+                  // if (typeof validation.email === "string")
                     checkAllValidation("email", e.target.value);
                 }}
                 onBlur={(e) => checkAllValidation("email", e.target.value)}
@@ -339,7 +339,7 @@ export default function SignIn() {
               {/*password */}
               {((formData.isRegistered && formData.verified) ||
                 (!formData.isRegistered && !formData.verified)) && (
-                  <div className="error-wrapper w-[85%]">
+                  <div className="error-wrapper w-[90%]">
                     <div className="relative ">
                       <input
                         value={formData.password}
@@ -368,7 +368,7 @@ export default function SignIn() {
               {!formData.isRegistered && (
                 <Fragment>
                   {/*confirm_password */}
-                  <div className="error-wrapper w-[85%]">
+                  <div className="error-wrapper w-[90%]">
                     <div className="relative">
                       <input
                         value={formData.confirm_password}
@@ -391,7 +391,7 @@ export default function SignIn() {
                     </div>
                   </div>
                   {/*username*/}
-                  <div className="error-wrapper w-[85%]">
+                  <div className="error-wrapper w-[90%]">
                     <div className="relative flex gap-2">
                       <input
                         value={formData.username}
@@ -510,7 +510,7 @@ export default function SignIn() {
           )}
           <button
             type="submit"
-            className="bg-primary text-white text-lg font-semibold  py-1 px-5 w-[85%] disabled:opacity-60 disabled:cursor-not-allowed"
+            className="bg-primary text-white text-lg font-semibold  py-1 px-5 w-[90%] disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={
               isLoading ||
               (!formData.isChecked &&  (typeof validation.email === "string" || !formData.email)) ||
