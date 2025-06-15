@@ -101,7 +101,7 @@ userRouter.post("/signup", async (req, res) => {
     );
     const verificationToken = new VerificationTokenModel({ token, email });
     await verificationToken.save({ session });
-    // await sendVerificationMail(email, token);
+    await sendVerificationMail(email, token);
     await session.commitTransaction();
     return res
       .status(201)
